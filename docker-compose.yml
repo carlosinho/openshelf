@@ -1,0 +1,10 @@
+services:
+  openshelf:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - OPENSHELF_PASSWORD=${OPENSHELF_PASSWORD:-changeme}
+    restart: unless-stopped

@@ -1,0 +1,52 @@
+{
+  "name": "openshelf",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "bun run dev:frontend",
+    "dev:frontend": "webpack serve --mode=development",
+    "dev:server": "NODE_ENV=development bun --watch server/index.ts",
+    "build": "webpack --mode=production",
+    "start": "bun run build && bun server/index.ts"
+  },
+  "dependencies": {
+    "@internationalized/date": "^3.5.5",
+    "@radix-ui/react-radio-group": "^1.3.7",
+    "@radix-ui/react-tabs": "^1.1.12",
+    "@types/papaparse": "^5.3.8",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.0.0",
+    "hono": "^4.12.12",
+    "lucide-react": "^0.284.0",
+    "papaparse": "^5.4.1",
+    "react": "^18.2.0",
+    "react-aria-components": "^1.4.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^2.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@typescript-eslint/eslint-plugin": "^6.10.0",
+    "@typescript-eslint/parser": "^6.10.0",
+    "autoprefixer": "^10.4.16",
+    "bun-types": "^1.3.12",
+    "copy-webpack-plugin": "^11.0.0",
+    "css-loader": "^6.8.1",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "html-webpack-plugin": "^5.5.3",
+    "mini-css-extract-plugin": "^2.9.2",
+    "postcss": "^8.4.31",
+    "postcss-loader": "^7.3.3",
+    "style-loader": "^3.3.3",
+    "tailwindcss": "^3.3.5",
+    "ts-loader": "^9.5.0",
+    "typescript": "^5.2.2",
+    "webpack": "^5.89.0",
+    "webpack-bundle-analyzer": "^4.10.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  }
+}
