@@ -1,4 +1,8 @@
-# OpenShelf
+<p align="center">
+  <img src="public/nookio-side.png" alt="OpenShelf banner" width="900" />
+</p>
+
+<h1 align="center">OpenShelf</h1>
 
 OpenShelf is a self-hosted, single-user read-later manager built for people who want full control over their links.
 
@@ -99,6 +103,7 @@ Open `http://localhost:3000`.
 Run the API server:
 
 ```bash
+bun install
 bun run dev:server
 ```
 
