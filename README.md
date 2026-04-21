@@ -1,12 +1,17 @@
-<p align="center">
-  <img src="public/nookio-side.png" alt="OpenShelf banner" width="900" />
-</p>
-
 <h1 align="center">OpenShelf</h1>
 
-OpenShelf is a self-hosted, single-user read-later manager built for people who want full control over their links.
-
-It runs as a private web app on your own machine or server, stores everything in a local SQLite database, and keeps the existing OpenShelf strengths: CSV import, strong filtering, cleanup tools, manual link adding, URL checks, CSV export, and downloadable SQLite backups.
+<table>
+  <tr>
+    <td width="240" align="center" valign="top">
+      <img src="public/nookio-side.png" alt="OpenShelf logo" width="220" />
+    </td>
+    <td valign="middle">
+      <strong>OpenShelf</strong> is a self-hosted, single-user read-later manager built for people who want full control over their links.
+      <br /><br />
+      It runs as a private web app on your own machine or server, stores everything in a local SQLite database, and keeps the existing OpenShelf strengths: CSV import, strong filtering, cleanup tools, manual link adding, URL checks, CSV export, and downloadable SQLite backups.
+    </td>
+  </tr>
+</table>
 
 ## Why It Exists
 
