@@ -2,7 +2,6 @@
 
 ## Status
 
-- v0.20 - final PocketZen native version - ephemeral imports and clean up + export to CSV
 - v0.30 - initial post-pivot version - stand-alone web app meant to be self hosted for single user and let them manage their links of things to read later - with persistant database in SQLite
 - v0.40 - cleaner UI for daily use
 - v0.50 - new branding
@@ -11,39 +10,7 @@
 
 ## Roadmap
 
-### v0.01 - Browser-only proof of concept
-- [x] Local React + TypeScript + Webpack app set up for in-browser processing only
-- [x] Tailwind + Origin UI foundation added for tables, filters, buttons, pagination, and date inputs
-- [x] Pocket CSV parser built with Papa Parse
-- [x] Pocket CSV format validation added for required headers and row-level field checks
-- [x] In-memory data model established around Pocket items (`title`, `url`, `time_added`, `tags`, `status`)
-
-### v0.10 - Working import and review MVP
-- [x] Drag-and-drop CSV upload flow built with file dialog fallback
-- [x] Multi-file import supported
-- [x] Upload constraints enforced in the browser: CSV only, max 10 files, nominal 50MB/file limit
-- [x] Multi-file merge deduplicates items by URL
-- [x] Main data table shipped with pagination
-- [x] Items-per-page controls shipped: 50 / 100 / 200 / 500 / 1000
-- [x] Status filter shipped for `All`, `Unread`, and `Archive`, with live counts
-- [x] Real-time search shipped across titles, URLs, and tags when tags exist
-- [x] Date sorting shipped for newest-first and oldest-first
-- [x] Page-aware row selection shipped, including select-all for the current page
-- [x] Single-item delete and bulk delete shipped with confirmation dialogs
-- [x] Import success notice shipped with unread/archive counts
-
-### v0.20 - Cleanup and export workflow
-- [x] CSV export shipped for the whole dataset
-- [x] Filter-aware export shipped for the currently filtered view
-- [x] Selected-items export shipped for checked rows only
-- [x] Export filenames include scope, item count, and date stamp
-- [x] Date-added filtering shipped with `before`, `after`, and `between` modes
-- [x] Archive cleanup shipped: delete all archived items in one action
-- [x] Homepage-only filtering shipped using URL/path/query heuristics - show homepages stored in the dataset
-- [x] URL validation shipped for filtered unread items only
-- [x] URL validation includes progress tracking, cancel support, and problem marking on rows with "X" badge
-- [x] Manual add-link flow shipped for the current in-memory dataset
-- [x] Added links are normalized, checked for duplicates, default to `unread`, and try to fetch a page title before falling back to the URL
+Versions prior to v0.30 considered legacy.
 
 ### v0.30 - Self-hosted backend pivot
 - [x] Optional local persistence - resolved in favor of a self-hosted SQLite-backed app

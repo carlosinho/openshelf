@@ -83,7 +83,8 @@ If you set `NODE_ENV=production`, use HTTPS. The auth cookie becomes `Secure`, s
 
 ```bash
 cp .env.example .env
-# edit OPENSHELF_PASSWORD
+# this creates the env file
+# set the password you want to use in OPENSHELF_PASSWORD
 docker compose up --build
 ```
 
@@ -98,7 +99,8 @@ Persistence:
 
 ```bash
 cp .env.example .env
-# edit OPENSHELF_PASSWORD
+# this creates the env file
+# set the password you want to use in OPENSHELF_PASSWORD
 bun install
 bun run start
 ```
