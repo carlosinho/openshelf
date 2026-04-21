@@ -613,6 +613,23 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     }
   }
 
+  const getPlatformBadge = (platform: SupportedPlatform | null) => {
+    if (!platform) {
+      return null
+    }
+
+    const platformLabel = PLATFORM_OPTIONS.find((option) => option.key === platform)?.label ?? 'Platform'
+
+    return (
+      <div
+        className="flex size-5 items-center justify-center rounded text-muted-foreground"
+        title={platformLabel}
+      >
+        {getPlatformIcon(platform)}
+      </div>
+    )
+  }
+
   // Removed favicon fetching - too many requests for large lists
   // Removed URL truncation - users want to see full URLs
 
@@ -1133,7 +1150,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
               <TableHead className="w-[40%]">URL</TableHead>
               <TableHead className="w-[12%]">Date Added</TableHead>
               <TableHead className="text-center">
-                <Tooltip content="U - unread, A - archived, X - problem resolving">
+                <Tooltip content="Platform icon, U - unread, A - archived, X - problem resolving">
                   <div className="flex items-center gap-1 justify-center">
                     Status
                     <HelpCircle className="w-3 h-3 text-muted-foreground" />
@@ -1184,7 +1201,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
                       rel="noopener noreferrer"
                       className="hover:text-primary transition-colors flex items-center gap-2"
                     >
-                      {getPlatformIcon(platform)}
+                      <ExternalLink className="size-3.5 flex-shrink-0 text-current" aria-hidden="true" />
                       <span className="break-words">{item.title || 'Untitled'}</span>
                     </a>
                   </TableCell>
@@ -1198,6 +1215,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex justify-center items-center gap-1">
+                      {getPlatformBadge(platform)}
                       {getStatusBadge(item.status)}
                       {getValidationBadge(item.validation_status)}
                     </div>

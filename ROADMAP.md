@@ -4,6 +4,8 @@
 
 - v0.20 - final PocketZen native version - ephemeral imports and clean up + export to CSV
 - v0.30 - initial post-pivot version - stand-alone web app meant to be self hosted for single user and let them manage their links of things to read later - with persistant database in SQLite
+- v0.40 - cleaner UI for daily use
+- v0.50 - new branding
 
 > OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
 
@@ -72,6 +74,7 @@
     - Change the logo. The new logo file is in public - nookio-side.png
 
 ### v0.60 - Unread/archive controls
+- [x] Move those platform icons - Twitter, Reddit, GitHub - that are on the main list to be in the status column instead.
 - [ ] Do some actual controls for marking items read (aka. adding them to archive).
     - Add a new field to db - timestamp when item marked archived - prepare migration script if needed to make the current version not break
 - [ ] Title editing for items on the list.

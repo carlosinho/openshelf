@@ -13,6 +13,10 @@
   </tr>
 </table>
 
+<p align="center">
+  <img src="public/OpenShelf-scrn.png" alt="OpenShelf app screenshot" width="900" />
+</p>
+
 ## Why It Exists
 
 OpenShelf started as a browser-only CSV processor and has now been turned into a persistent local web app. The current implementation is for one operator who wants a private, local-first Pocket replacement without accounts, sync services, or external storage.
@@ -201,3 +205,7 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
 
 - Large libraries feel heavy.  
   The current app loads all items into browser memory and applies search, filtering, sorting, pagination, and CSV export client-side.
+
+## License
+
+OpenShelf is available under the MIT License. See `LICENSE`.
