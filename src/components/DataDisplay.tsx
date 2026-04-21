@@ -58,17 +58,17 @@ function RedditIcon({ className }: { className?: string }) {
       strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={className}
+      className={cn(className, 'size-4')}
       aria-hidden="true"
     >
-      <circle cx="12" cy="13" r="5.5" />
-      <circle cx="9.7" cy="11.6" r="0.7" fill="currentColor" stroke="none" />
-      <circle cx="14.3" cy="11.6" r="0.7" fill="currentColor" stroke="none" />
-      <path d="M10 14.7c1.1.8 2.9.8 4 0" />
-      <path d="M13.6 7.8 15 4.9l2.4.6" />
-      <circle cx="18.2" cy="5.5" r="1.3" />
-      <path d="M17.1 9.1c.7.3 1.3.8 1.7 1.5" />
-      <path d="M5.2 10.7c.4-.7.9-1.2 1.6-1.6" />
+      <circle cx="12" cy="13.25" r="6.25" />
+      <circle cx="9.4" cy="12.4" r="1.05" fill="currentColor" stroke="none" />
+      <circle cx="14.6" cy="12.4" r="1.05" fill="currentColor" stroke="none" />
+      <path d="M9.6 15.55c.8.78 1.82 1.2 2.4 1.2.58 0 1.6-.42 2.4-1.2" />
+      <path d="M13.9 7.35 15.3 4.55l2.75.6" />
+      <circle cx="18.55" cy="5.55" r="1.45" />
+      <path d="M17.55 9.5c.72.28 1.34.78 1.78 1.43" />
+      <path d="M4.8 10.95c.45-.76 1.1-1.35 1.87-1.67" />
     </svg>
   )
 }

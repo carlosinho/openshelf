@@ -33,6 +33,7 @@ Versions prior to v0.30 considered legacy.
 - [x] Better handling of links from specific platforms: Twitter, Reddit, GitHub.
     - Add a new section in the filters like in the screenshot. When clicked only links from these platforms should appear.
     - Display the platform's icon next to the item in the main list - minimal black and white icon. Icon to the left of title.
+- [x] Move those platform icons - Twitter, Reddit, GitHub - that are on the main list to be in the status column instead.
 
 ### v0.50 - Name change
 - [x] Rebrand with a new name.
@@ -40,25 +41,25 @@ Versions prior to v0.30 considered legacy.
     - Change all visible references of PocketZen to OpenShelf.
     - Change the logo. The new logo file is in public - nookio-side.png
 
-### v0.60 - Unread/archive controls
-- [x] Move those platform icons - Twitter, Reddit, GitHub - that are on the main list to be in the status column instead.
+### v0.60 - Refactor
+- [ ] Refactor DataDisplay.tsx - it's too big.
+
+### v0.70 - Unread/archive controls, mobile
 - [ ] Do some actual controls for marking items read (aka. adding them to archive).
     - Add a new field to db - timestamp when item marked archived - prepare migration script if needed to make the current version not break
 - [ ] Title editing for items on the list.
-
-### v0.70 - Improve mobile
 - [ ] Improve mobile
 
 ### v0.80 - Selfbrand
 - [ ] The idea is to make it available for users to make their own instance of this fit their brand
     - Option to upload their own logo.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
+
+### Backlog / Future
 - [ ] Filter connectors
     - Right now, the built in filters include platforms like Twitter, GitHub, Reddit. The user should be able to add their own filters for other platforms if they way to.
     - This will let users have filters for sites they actually store content from the most often.
     - Pick the best way of making it possible: (a) just a form to enter platform URL, path to logo, or maybe (b) a json file with definition, or maybe (c) something else that's better.
-
-### Backlog / Future
 - [ ] Performance validation and optimization - verify behavior with very large Pocket exports and only optimize where real bottlenecks show up
 - [ ] Bulk status migration - add a safe way to flip all `unread` items to `archive` and all `archive` items to `unread`
 - [ ] Saved search history/tree UI. Saved search functionality with exact title/URL matching; using Origin UI tree elements; 1. Add saved search functionality to store each search query used. 2. Create search history UI in the search controls area; use the Origin UI tree element for this. 3. Integrate with existing search state management
