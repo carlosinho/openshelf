@@ -8,7 +8,7 @@
     <td valign="middle">
       <strong>OpenShelf</strong> is a self-hosted, single-user read-later manager built for people who want full control over their links.
       <br /><br />
-      It runs as a private web app on your own machine or server, stores everything in a local SQLite database, and keeps the existing OpenShelf strengths: CSV import, strong filtering, cleanup tools, manual link adding, URL checks, CSV export, and downloadable SQLite backups.
+      It runs as a private web app on your own machine or server, and stores everything in a local SQLite database. It offers: CSV import from Pocket export files, strong filtering, cleanup tools, manual link adding, URL checks, CSV export, and downloadable SQLite backups.
     </td>
   </tr>
 </table>

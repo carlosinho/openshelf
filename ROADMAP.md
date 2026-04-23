@@ -43,6 +43,8 @@ Versions prior to v0.30 considered legacy.
 
 ### v0.60 - Refactor
 - [ ] Refactor DataDisplay.tsx - it's too big.
+    - Refactor the file but don't change any of the features
+    - See if we can break off parts of it to other files
 
 ### v0.70 - Unread/archive controls, mobile
 - [ ] Do some actual controls for marking items read (aka. adding them to archive).
@@ -50,7 +52,10 @@ Versions prior to v0.30 considered legacy.
 - [ ] Title editing for items on the list.
 - [ ] Improve mobile
 
-### v0.80 - Selfbrand
+### v0.80 - API
+- [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
+
+### v0.90 - Selfbrand
 - [ ] The idea is to make it available for users to make their own instance of this fit their brand
     - Option to upload their own logo.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
