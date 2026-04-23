@@ -163,7 +163,7 @@ function App() {
       )}
       
       {/* Footer */}
-      <KarolFooter version="ver 0.51" className={isAuthenticated && hasData ? 'mt-4' : ''} />
+      <KarolFooter version="ver 0.61" className={isAuthenticated && hasData ? 'mt-4' : ''} />
       
       {/* Karol Badge - floating face 
       <KarolBadge />*/}

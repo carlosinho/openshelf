@@ -155,7 +155,9 @@ src/
   components/
     FileUpload.tsx    # Reusable CSV import UI for onboarding and later merges
     LoginForm.tsx     # Password unlock screen
-    DataDisplay.tsx   # Main library UI and most operator actions
+    DataDisplay.tsx   # Main library orchestrator for state, derived data, and actions
+    data-display/
+      ...             # Extracted DataDisplay UI sections and helpers
   types/pocket.ts     # Shared item type used by client and server
 data/
   openshelf.db        # Created automatically at runtime

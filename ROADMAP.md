@@ -42,9 +42,11 @@ Versions prior to v0.30 considered legacy.
     - Change the logo. The new logo file is in public - nookio-side.png
 
 ### v0.60 - Refactor
-- [ ] Refactor DataDisplay.tsx - it's too big.
+- [x] Refactor DataDisplay.tsx - it's too big.
     - Refactor the file but don't change any of the features
     - See if we can break off parts of it to other files
+- [x] Improve Twitter and Reddit link fetches.
+    - The app couldn't get titles for tweets and Reddit pages.
 
 ### v0.70 - Unread/archive controls, mobile
 - [ ] Do some actual controls for marking items read (aka. adding them to archive).
@@ -76,9 +78,10 @@ Versions prior to v0.30 considered legacy.
 - The app is now persistent, but still single-user and intentionally simple - there is no account system, no sync layer, and no multi-user support
 - The nominal 50MB upload limit exists in code, but the README explicitly notes that real-world limits have not been verified yet
 - Large-list behavior above roughly 50k items is still an open performance question
-- `DataDisplay.tsx` still owns a large amount of app state and workflow logic, so future changes there will get harder without refactoring
+- `DataDisplay.tsx` is now split into smaller UI modules under `src/components/data-display/`, but it still owns the central state and workflow logic for the library screen
 - Manual title fetching for added links is now best-effort server-side, and many sites will still block or degrade fetches
 - Docker is the recommended distribution path; Bun-only setup works well for developers but is less familiar for some users
+- Getting reliable titles for Twitter articles - not standard tweets - still doesn't work.
 
 ## Decisions Pending
 

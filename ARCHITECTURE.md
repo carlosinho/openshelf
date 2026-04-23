@@ -121,7 +121,7 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 ### Browse And Mutate Library
 
 1. `GET /api/items` returns all rows ordered by `time_added DESC, id DESC`.
-2. `DataDisplay.tsx` computes header status selection, search, platform, date, homepage-only filters, sorting, pagination, and selection entirely in memory.
+2. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, date, homepage-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
 3. The default authenticated library view enables only the unread checkbox in the header. Enabling both checkboxes behaves like the old "all" view, while disabling both produces an empty result set.
 4. Rows can display a small platform icon for recognized Twitter/X, Reddit, and GitHub links, derived from the stored URL in the browser.
 5. Single delete and bulk delete both use the bulk-delete endpoint.
@@ -248,8 +248,8 @@ Security boundary:
 
 - The architecture is intentionally scoped to one shared library for one operator.
 - All items are loaded into browser memory at once.
-- Search, filtering, sorting, pagination, selection, and the main export path all scale with the in-memory list in `DataDisplay.tsx`.
-- `DataDisplay.tsx` is already a large workflow hub, which increases future change cost.
+- Search, filtering, sorting, pagination, selection, and the main export path all scale with the in-memory list coordinated by `DataDisplay.tsx`.
+- The main library UI has been split into `src/components/data-display/`, but `DataDisplay.tsx` still owns the central state and workflow orchestration for that screen.
 - There is no virtualization, server-side querying, background revalidation queue, or multi-process coordination.
 - The roadmap already calls out large-list performance as an open question above roughly `50k` items.
 
