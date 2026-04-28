@@ -28,7 +28,7 @@ OpenShelf started as a browser-only CSV processor and has now been turned into a
 - Protect the instance with one password and signed session cookies.
 - Browse the full library with header-based unread/archive status selection, search, platform filtering for Twitter/X, Reddit, and GitHub, date filtering, homepage-only filtering, sorting, pagination, and row selection.
 - Add one link manually.
-- Delete one item, bulk delete selected items, or clear all archived items.
+- Archive or unarchive one item from the list, archive or unarchive selected items, bulk delete selected items, or clear all archived items.
 - Export all items, the current filtered view, or selected rows to CSV from the browser.
 - Download a raw SQLite backup from the server.
 - Run browser-side URL checks against the current filtered unread set and save `valid` or `problem` results.
@@ -46,7 +46,7 @@ OpenShelf started as a browser-only CSV processor and has now been turned into a
 
 1. Log in.
 2. The app loads all items from `/api/items`.
-3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, export, and delete from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
+3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, and delete from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
 4. Optionally import more Pocket CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
 
 ### Export And Backup

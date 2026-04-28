@@ -59,6 +59,7 @@ Fields in the shared model:
 - `time_added`: Unix timestamp used for sorting and date filters.
 - `tags`: Pocket-style comma-separated tag string.
 - `status`: `unread` or `archive`.
+- `archived_at`: when the item was most recently moved to `archive`.
 - `validation_status`: optional URL-check result.
 - `validation_checked_at`: when URL validation last completed.
 
@@ -83,6 +84,7 @@ Fields in the shared model:
 | `time_added` | `INTEGER NOT NULL` | Preserves Pocket timestamps and drives sorting/filtering. |
 | `tags` | `TEXT DEFAULT ''` | Keeps Pocket tag data in display/searchable form. |
 | `status` | `TEXT CHECK(status IN ('unread', 'archive')) DEFAULT 'unread'` | Main lifecycle flag. |
+| `archived_at` | `INTEGER` | Stores when an item was most recently marked archived in OpenShelf. |
 | `validation_status` | `TEXT` | Stores browser-side URL validation outcome. |
 | `validation_checked_at` | `INTEGER` | Timestamp of the most recent validation write-back. |
 
@@ -124,11 +126,12 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 2. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, date, homepage-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
 3. The default authenticated library view enables only the unread checkbox in the header. Enabling both checkboxes behaves like the old "all" view, while disabling both produces an empty result set.
 4. Rows can display a small platform icon for recognized Twitter/X, Reddit, and GitHub links, derived from the stored URL in the browser.
-5. Single delete and bulk delete both use the bulk-delete endpoint.
-6. Clear archived deletes every row whose `status` is `archive`.
-7. Manual add posts a URL to `POST /api/items`.
-8. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
-9. After every mutation, the frontend refetches the full library rather than patching local state incrementally.
+5. Row-level and bulk archive controls use `PATCH /api/items/:id` to flip `status` between `unread` and `archive`.
+6. The server sets `archived_at` when an item moves to `archive` and clears it when the item moves back to `unread`.
+7. Clear archived deletes every row whose `status` is `archive`.
+8. Manual add posts a URL to `POST /api/items`.
+9. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
+10. After every mutation, the frontend refetches the full library rather than patching local state incrementally.
 
 ### URL Validation
 
@@ -165,8 +168,9 @@ Important exception: persistence happens only after the full run resolves. If va
 
 - Imported items keep the `status` value from CSV.
 - Manually added items default to `unread`.
+- Marking an item archived stores an `archived_at` timestamp; moving it back to unread clears that field.
 - Archived items can be deleted in bulk.
-- There is currently no UI action to flip `unread` to `archive` or the reverse.
+- Items can be moved between `unread` and `archive` from the row actions or selected-items bulk actions.
 
 ### Validation State
 

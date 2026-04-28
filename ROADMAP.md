@@ -5,6 +5,8 @@
 - v0.30 - initial post-pivot version - stand-alone web app meant to be self hosted for single user and let them manage their links of things to read later - with persistant database in SQLite
 - v0.40 - cleaner UI for daily use
 - v0.50 - new branding
+- v0.60 - code refactor
+- v0.70 - read/archived controls, mobile improvements
 
 > OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
 
@@ -48,11 +50,10 @@ Versions prior to v0.30 considered legacy.
 - [x] Improve Twitter and Reddit link fetches.
     - The app couldn't get titles for tweets and Reddit pages.
 
-### v0.70 - Unread/archive controls, mobile
-- [ ] Do some actual controls for marking items read (aka. adding them to archive).
-    - Add a new field to db - timestamp when item marked archived - prepare migration script if needed to make the current version not break
+### v0.70 - Read/archived controls, mobile
+- [x] Do some actual controls for marking items read (aka. adding them to archive).
 - [ ] Title editing for items on the list.
-- [ ] Improve mobile
+- [ ] Improve mobile.
 
 ### v0.80 - API
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
@@ -89,3 +90,5 @@ Versions prior to v0.30 considered legacy.
 - Is in-memory rendering/filtering sufficient for the target dataset sizes, or do we need heavier performance work such as virtualization or off-main-thread processing?
 - If saved searches are added, what is the canonical data model for the search tree and nested-query behavior?
 - Should OpenShelf stay a strictly self-hosted single-user tool, or eventually grow an optional sync or sharing story?
+- Should we display the archived timestamp anywhere or use it in any other way?
+- There was a "clear archived" feature in original PocketZen. Should we bring it in some form in OpenShelf?

@@ -13,6 +13,7 @@ export interface CreateItemInput {
   url: string
   tags?: string
   status?: ItemStatus
+  archived_at?: number
   time_added?: number
 }
 
@@ -45,6 +46,7 @@ db.exec(`
     time_added INTEGER NOT NULL,
     tags TEXT DEFAULT '',
     status TEXT CHECK(status IN ('unread', 'archive')) DEFAULT 'unread',
+    archived_at INTEGER,
     validation_status TEXT,
     validation_checked_at INTEGER
   );
@@ -58,6 +60,7 @@ const baseSelect = `
     time_added,
     tags,
     status,
+    archived_at,
     validation_status,
     validation_checked_at
   FROM items
@@ -75,6 +78,7 @@ function mapRow(row: Record<string, unknown> | null): PocketItem | null {
     time_added: Number(row.time_added),
     tags: String(row.tags ?? ''),
     status: row.status as ItemStatus,
+    archived_at: row.archived_at == null ? undefined : Number(row.archived_at),
     validation_status: (row.validation_status ?? undefined) as ValidationStatus,
     validation_checked_at: row.validation_checked_at == null ? undefined : Number(row.validation_checked_at),
   }
@@ -113,17 +117,20 @@ export function getItemByUrl(url: string): PocketItem | null {
 }
 
 export function addItem(input: CreateItemInput): PocketItem {
+  const archivedAt =
+    input.archived_at ?? (input.status === 'archive' ? Math.floor(Date.now() / 1000) : null)
   const insertResult = db
     .query(`
-      INSERT INTO items (title, url, time_added, tags, status)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO items (title, url, time_added, tags, status, archived_at)
+      VALUES (?, ?, ?, ?, ?, ?)
     `)
     .run(
       input.title,
       input.url,
       input.time_added ?? Math.floor(Date.now() / 1000),
       input.tags ?? '',
-      input.status ?? 'unread'
+      input.status ?? 'unread',
+      archivedAt
     ) as { lastInsertRowid: number | bigint }
 
   const id = Number(insertResult.lastInsertRowid)
@@ -158,6 +165,11 @@ export function deleteByStatus(status: ItemStatus): number {
 }
 
 export function updateItem(id: number, fields: UpdateItemInput): PocketItem | null {
+  const existingItem = getItemById(id)
+  if (!existingItem) {
+    return null
+  }
+
   const assignments: string[] = []
   const values: Array<string | number | null> = []
 
@@ -174,6 +186,11 @@ export function updateItem(id: number, fields: UpdateItemInput): PocketItem | nu
   if (fields.status !== undefined) {
     assignments.push('status = ?')
     values.push(fields.status)
+
+    if (fields.status !== existingItem.status) {
+      assignments.push('archived_at = ?')
+      values.push(fields.status === 'archive' ? Math.floor(Date.now() / 1000) : null)
+    }
   }
 
   if (fields.validation_status !== undefined) {
@@ -209,10 +226,11 @@ export function importItems(items: ImportItemInput[]): ImportSummary {
       time_added,
       tags,
       status,
+      archived_at,
       validation_status,
       validation_checked_at
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `)
 
   let insertedCount = 0
@@ -226,6 +244,7 @@ export function importItems(items: ImportItemInput[]): ImportSummary {
         item.time_added,
         item.tags,
         item.status,
+        item.archived_at ?? null,
         item.validation_status ?? null,
         item.validation_checked_at ?? null
       ) as { changes: number }

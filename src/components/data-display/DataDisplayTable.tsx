@@ -1,4 +1,4 @@
-import { ExternalLink, HelpCircle, Trash2 } from 'lucide-react'
+import { Archive, ExternalLink, HelpCircle, RotateCcw } from 'lucide-react'
 import { Checkbox } from '../ui/checkbox'
 import { Tooltip } from '../ui/tooltip'
 import {
@@ -29,7 +29,7 @@ interface DataDisplayTableProps {
   selectedPlatforms: Record<SupportedPlatform, boolean>
   onTogglePageSelection: (checked: boolean) => void
   onToggleItemSelection: (itemId: number, checked: boolean) => void
-  onDeleteSingle: (itemId: number) => void
+  onToggleArchived: (item: PocketItem) => void
 }
 
 export function DataDisplayTable({
@@ -45,7 +45,7 @@ export function DataDisplayTable({
   selectedPlatforms,
   onTogglePageSelection,
   onToggleItemSelection,
-  onDeleteSingle,
+  onToggleArchived,
 }: DataDisplayTableProps) {
   if (filteredAndSortedData.length === 0) {
     return (
@@ -109,7 +109,7 @@ export function DataDisplayTable({
                       onToggleItemSelection(item.id, event.target.checked)
                     }
                   />
-                  <ButtonDelete onClick={() => onDeleteSingle(item.id)} />
+                  <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
                 </div>
               </TableCell>
               <TableCell className="font-medium">
@@ -167,15 +167,19 @@ export function DataDisplayTable({
   )
 }
 
-function ButtonDelete({ onClick }: { onClick: () => void }) {
+function ButtonArchiveToggle({ item, onClick }: { item: PocketItem; onClick: () => void }) {
+  const isArchived = item.status === 'archive'
+  const label = isArchived ? 'Move item back to unread' : 'Mark item as read and move to archive'
+
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-6 w-6 items-center justify-center rounded-sm p-0 text-red-600 transition-colors hover:bg-red-50 hover:text-red-700"
-      aria-label="Delete item"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 p-0 text-zinc-900 transition-colors hover:bg-zinc-200 hover:text-zinc-950"
+      aria-label={label}
+      title={label}
     >
-      <Trash2 className="w-3 h-3" />
+      {isArchived ? <RotateCcw className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
     </button>
   )
 }

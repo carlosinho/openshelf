@@ -105,21 +105,43 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     }
   }
 
-  const handleDeleteSingle = async (itemId: number) => {
-    if (!confirm('Are you sure you want to delete this item?')) {
-      return
-    }
+  const handleToggleArchived = async (item: PocketItem) => {
+    const nextStatus = item.status === 'archive' ? 'unread' : 'archive'
 
     try {
-      await bulkDeleteItems([itemId])
+      await patchItem(item.id, { status: nextStatus })
       setSelectedItems((prev) => {
         const next = new Set(prev)
-        next.delete(itemId)
+        next.delete(item.id)
         return next
       })
       await onRefresh?.()
     } catch (error) {
-      handleRequestError(error, 'Failed to delete item.')
+      handleRequestError(
+        error,
+        nextStatus === 'archive' ? 'Failed to archive item.' : 'Failed to move item back to unread.'
+      )
+    }
+  }
+
+  const handleToggleSelectedArchived = async () => {
+    const selectedData = data.filter((item) => selectedItems.has(item.id))
+    if (selectedData.length === 0) {
+      return
+    }
+
+    try {
+      await Promise.all(
+        selectedData.map((item) =>
+          patchItem(item.id, {
+            status: item.status === 'archive' ? 'unread' : 'archive',
+          })
+        )
+      )
+      setSelectedItems(new Set())
+      await onRefresh?.()
+    } catch (error) {
+      handleRequestError(error, 'Failed to update selected items.')
     }
   }
 
@@ -184,6 +206,10 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
   const hasAnyTags = useMemo(() => {
     return data.some((item) => item.tags && item.tags.trim() !== '')
   }, [data])
+
+  const selectedData = useMemo(() => {
+    return data.filter((item) => selectedItems.has(item.id))
+  }, [data, selectedItems])
 
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((item) => {
@@ -415,6 +441,14 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
   const archivedCount = useMemo(() => {
     return data.filter((item) => item.status === 'archive').length
   }, [data])
+
+  const selectedUnreadCount = useMemo(() => {
+    return selectedData.filter((item) => item.status === 'unread').length
+  }, [selectedData])
+
+  const selectedArchivedCount = useMemo(() => {
+    return selectedData.filter((item) => item.status === 'archive').length
+  }, [selectedData])
 
   const activeFilterCount = [
     dateFilter.mode !== 'none',
@@ -685,8 +719,13 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
 
       <DataDisplayBulkActions
         selectedCount={selectedItems.size}
+        selectedUnreadCount={selectedUnreadCount}
+        selectedArchivedCount={selectedArchivedCount}
         onExportSelected={handleExportSelected}
         onClearSelection={() => setSelectedItems(new Set())}
+        onToggleArchivedSelected={() => {
+          void handleToggleSelectedArchived()
+        }}
         onDeleteSelected={() => {
           void handleDeleteSelected()
         }}
@@ -705,8 +744,8 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         selectedPlatforms={selectedPlatforms}
         onTogglePageSelection={handleTogglePageSelection}
         onToggleItemSelection={handleToggleItemSelection}
-        onDeleteSingle={(itemId) => {
-          void handleDeleteSingle(itemId)
+        onToggleArchived={(item) => {
+          void handleToggleArchived(item)
         }}
       />
 

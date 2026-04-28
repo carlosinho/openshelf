@@ -5,6 +5,7 @@ export interface PocketItem {
   time_added: number
   tags: string
   status: 'archive' | 'unread'
+  archived_at?: number
   // URL validation fields
   validation_status?: 'pending' | 'checking' | 'valid' | 'problem'
   validation_checked_at?: number
