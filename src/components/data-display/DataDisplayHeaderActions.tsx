@@ -38,7 +38,7 @@ export function DataDisplayHeaderActions({
 }: DataDisplayHeaderActionsProps) {
   return (
     <>
-      <div className="relative" ref={actionsMenuRef}>
+      <div className="relative hidden lg:block" ref={actionsMenuRef}>
         <Button
           variant="outline"
           size="sm"
@@ -124,7 +124,7 @@ export function DataDisplayHeaderActions({
         variant="default"
         size="sm"
         onClick={onToggleAddLink}
-        className="gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200"
+        className="w-full justify-center gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200 lg:w-auto"
       >
         <Plus className="opacity-60" size={16} aria-hidden="true" />
         Add link

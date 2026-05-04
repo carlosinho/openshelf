@@ -43,7 +43,7 @@ export function DataDisplayFilters({
   onDateFilterChange,
 }: DataDisplayFiltersProps) {
   return (
-    <div className="mb-6">
+    <div className="mb-3 lg:mb-6">
       <div className="flex items-center gap-3">
         <Button
           variant="outline"

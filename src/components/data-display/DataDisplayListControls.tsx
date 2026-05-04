@@ -3,6 +3,8 @@ import { Button } from '../ui/button'
 
 type SortDirection = 'asc' | 'desc'
 
+const PAGE_SIZE_OPTIONS = [50, 100, 200, 500, 1000] as const
+
 interface DataDisplayListControlsProps {
   sortDirection: SortDirection
   itemsPerPage: number
@@ -17,7 +19,7 @@ export function DataDisplayListControls({
   onItemsPerPageChange,
 }: DataDisplayListControlsProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg bg-muted/30 p-4">
+    <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-lg bg-muted/30 p-3 sm:p-4 lg:mb-6">
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-muted-foreground">Sort:</span>
         <Button
@@ -41,9 +43,31 @@ export function DataDisplayListControls({
       </div>
 
       <div className="flex items-center gap-2">
-        <span className="text-sm font-medium text-muted-foreground">Items per page:</span>
-        <div className="flex gap-1">
-          {[50, 100, 200, 500, 1000].map((size) => (
+        <label
+          htmlFor="openshelf-items-per-page"
+          className="text-sm font-medium text-muted-foreground sm:hidden"
+        >
+          Per page:
+        </label>
+        <span className="hidden text-sm font-medium text-muted-foreground sm:inline">
+          Items per page:
+        </span>
+
+        <select
+          id="openshelf-items-per-page"
+          value={itemsPerPage}
+          onChange={(event) => onItemsPerPageChange(Number(event.target.value))}
+          className="h-9 rounded-md border border-input bg-background px-2 text-sm sm:hidden"
+        >
+          {PAGE_SIZE_OPTIONS.map((size) => (
+            <option key={size} value={size}>
+              {size}
+            </option>
+          ))}
+        </select>
+
+        <div className="hidden gap-1 sm:flex">
+          {PAGE_SIZE_OPTIONS.map((size) => (
             <Button
               key={size}
               variant={itemsPerPage === size ? 'default' : 'outline'}

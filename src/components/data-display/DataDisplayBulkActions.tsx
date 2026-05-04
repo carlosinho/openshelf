@@ -33,33 +33,51 @@ export function DataDisplayBulkActions({
         : 'Archive selected'
 
   return (
-    <div className="mb-4 flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-4">
-      <div className="flex items-center gap-3">
+    <div className="mb-3 flex flex-row flex-wrap items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 p-3 sm:p-4 lg:mb-4 lg:gap-3">
+      <div className="flex flex-wrap items-center gap-2 lg:gap-3">
         <Button variant="secondary" onClick={onClearSelection}>
-          Clear selection
+          <span className="lg:hidden">Clear</span>
+          <span className="hidden lg:inline">Clear selection</span>
         </Button>
         <div className="flex items-center gap-2 text-sm text-blue-800">
-        <span className="font-medium">
-          {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
-        </span>
+          <span className="font-medium lg:hidden">{selectedCount} selected</span>
+          <span className="hidden font-medium lg:inline">
+            {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Button variant="outline" onClick={onExportSelected} className="gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={onExportSelected}
+          className="hidden gap-2 lg:inline-flex"
+        >
           <Download className="opacity-60" size={16} aria-hidden="true" />
           Export selected
         </Button>
-        <Button variant="default" onClick={onToggleArchivedSelected} className="gap-2">
+        <Button
+          variant="default"
+          onClick={onToggleArchivedSelected}
+          className="gap-2"
+          aria-label={archiveButtonLabel}
+          title={archiveButtonLabel}
+        >
           {isOnlyArchivedSelected ? (
             <RotateCcw className="opacity-60" size={16} aria-hidden="true" />
           ) : (
             <Archive className="opacity-60" size={16} aria-hidden="true" />
           )}
-          {archiveButtonLabel}
+          <span className="hidden lg:inline">{archiveButtonLabel}</span>
         </Button>
-        <Button variant="destructive" onClick={onDeleteSelected} className="gap-2">
+        <Button
+          variant="destructive"
+          onClick={onDeleteSelected}
+          className="gap-2"
+          aria-label="Delete selected"
+          title="Delete selected"
+        >
           <Trash2 className="opacity-60" size={16} aria-hidden="true" />
-          Delete selected
+          <span className="hidden lg:inline">Delete selected</span>
         </Button>
       </div>
     </div>

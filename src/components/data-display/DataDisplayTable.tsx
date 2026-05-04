@@ -63,107 +63,202 @@ export function DataDisplayTable({
     )
   }
 
+  const allOnPageSelected =
+    paginatedData.length > 0 && paginatedData.every((item) => selectedItems.has(item.id))
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          <TableHead className="w-[80px]">
-            <Checkbox
-              id={id}
-              checked={
-                paginatedData.length > 0 &&
-                paginatedData.every((item) => selectedItems.has(item.id))
-              }
-              onChange={(event) => onTogglePageSelection(event.target.checked)}
-            />
-          </TableHead>
-          <TableHead className="w-[40%]">Title</TableHead>
-          <TableHead className="w-[40%]">URL</TableHead>
-          <TableHead className="w-[12%]">Date Added</TableHead>
-          <TableHead className="text-center">
-            <Tooltip content="Platform icon, U - unread, A - archived, X - problem resolving">
-              <div className="flex items-center justify-center gap-1">
-                Status
-                <HelpCircle className="w-3 h-3 text-muted-foreground" />
-              </div>
-            </Tooltip>
-          </TableHead>
-          {hasAnyTags && <TableHead>Tags</TableHead>}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <>
+      <MobileCardList
+        id={id}
+        paginatedData={paginatedData}
+        selectedItems={selectedItems}
+        allOnPageSelected={allOnPageSelected}
+        onTogglePageSelection={onTogglePageSelection}
+        onToggleItemSelection={onToggleItemSelection}
+        onToggleArchived={onToggleArchived}
+      />
+      <Table className="hidden lg:table">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead className="w-[80px]">
+              <Checkbox
+                id={id}
+                checked={allOnPageSelected}
+                onChange={(event) => onTogglePageSelection(event.target.checked)}
+              />
+            </TableHead>
+            <TableHead className="w-[40%]">Title</TableHead>
+            <TableHead className="w-[40%]">URL</TableHead>
+            <TableHead className="w-[12%]">Date Added</TableHead>
+            <TableHead className="text-center">
+              <Tooltip content="Platform icon, U - unread, A - archived, X - problem resolving">
+                <div className="flex items-center justify-center gap-1">
+                  Status
+                  <HelpCircle className="w-3 h-3 text-muted-foreground" />
+                </div>
+              </Tooltip>
+            </TableHead>
+            {hasAnyTags && <TableHead>Tags</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {paginatedData.map((item, index) => {
+            const platform = detectPlatformFromUrl(item.url)
+
+            return (
+              <TableRow
+                key={item.id}
+                data-state={selectedItems.has(item.id) ? 'selected' : undefined}
+              >
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id={`table-checkbox-${index}`}
+                      checked={selectedItems.has(item.id)}
+                      onChange={(event) =>
+                        onToggleItemSelection(item.id, event.target.checked)
+                      }
+                    />
+                    <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
+                  </div>
+                </TableCell>
+                <TableCell className="font-medium">
+                  <a
+                    href={item.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 transition-colors hover:text-primary"
+                  >
+                    <ExternalLink
+                      className="size-3.5 flex-shrink-0 text-current"
+                      aria-hidden="true"
+                    />
+                    <span className="break-words">{item.title || 'Untitled'}</span>
+                  </a>
+                </TableCell>
+                <TableCell className="font-mono text-xs">
+                  <span className="break-all">{item.url}</span>
+                </TableCell>
+                <TableCell>
+                  <span title={formatDateTime(item.time_added)}>
+                    {formatDate(item.time_added)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <PlatformBadge platform={platform} />
+                    <StatusBadge status={item.status} />
+                    <ValidationBadge validationStatus={item.validation_status} />
+                  </div>
+                </TableCell>
+                {hasAnyTags && (
+                  <TableCell>
+                    {item.tags && item.tags.trim() !== '' && (
+                      <span className="break-words text-xs text-muted-foreground">
+                        {item.tags}
+                      </span>
+                    )}
+                  </TableCell>
+                )}
+              </TableRow>
+            )
+          })}
+        </TableBody>
+        {selectedItems.size > 0 && (
+          <TableFooter className="bg-transparent">
+            <TableRow className="hover:bg-transparent">
+              <TableCell colSpan={hasAnyTags ? 6 : 5}>
+                {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        )}
+      </Table>
+    </>
+  )
+}
+
+interface MobileCardListProps {
+  id: string
+  paginatedData: PocketItem[]
+  selectedItems: Set<number>
+  allOnPageSelected: boolean
+  onTogglePageSelection: (checked: boolean) => void
+  onToggleItemSelection: (itemId: number, checked: boolean) => void
+  onToggleArchived: (item: PocketItem) => void
+}
+
+function MobileCardList({
+  id,
+  paginatedData,
+  selectedItems,
+  allOnPageSelected,
+  onTogglePageSelection,
+  onToggleItemSelection,
+  onToggleArchived,
+}: MobileCardListProps) {
+  return (
+    <div className="lg:hidden">
+      <ul className="flex flex-col gap-2">
         {paginatedData.map((item, index) => {
           const platform = detectPlatformFromUrl(item.url)
+          const isSelected = selectedItems.has(item.id)
 
           return (
-            <TableRow
+            <li
               key={item.id}
-              data-state={selectedItems.has(item.id) ? 'selected' : undefined}
+              data-state={isSelected ? 'selected' : undefined}
+              className="flex gap-3 rounded-lg border bg-background p-3 data-[state=selected]:bg-muted"
             >
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id={`table-checkbox-${index}`}
-                    checked={selectedItems.has(item.id)}
-                    onChange={(event) =>
-                      onToggleItemSelection(item.id, event.target.checked)
-                    }
-                  />
-                  <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
-                </div>
-              </TableCell>
-              <TableCell className="font-medium">
+              <div className="flex flex-col items-center gap-2">
+                <Checkbox
+                  id={`mobile-card-checkbox-${index}`}
+                  checked={isSelected}
+                  onChange={(event) =>
+                    onToggleItemSelection(item.id, event.target.checked)
+                  }
+                />
+                <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
+              </div>
+              <div className="min-w-0 flex-1">
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 transition-colors hover:text-primary"
+                  className="block font-medium transition-colors hover:text-primary"
                 >
-                  <ExternalLink
-                    className="size-3.5 flex-shrink-0 text-current"
-                    aria-hidden="true"
-                  />
                   <span className="break-words">{item.title || 'Untitled'}</span>
                 </a>
-              </TableCell>
-              <TableCell className="font-mono text-xs">
-                <span className="break-all">{item.url}</span>
-              </TableCell>
-              <TableCell>
-                <span title={formatDateTime(item.time_added)}>
-                  {formatDate(item.time_added)}
-                </span>
-              </TableCell>
-              <TableCell className="text-center">
-                <div className="flex items-center justify-center gap-1">
+                <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   <PlatformBadge platform={platform} />
                   <StatusBadge status={item.status} />
                   <ValidationBadge validationStatus={item.validation_status} />
+                  <span title={formatDateTime(item.time_added)}>
+                    {formatDate(item.time_added)}
+                  </span>
                 </div>
-              </TableCell>
-              {hasAnyTags && (
-                <TableCell>
-                  {item.tags && item.tags.trim() !== '' && (
-                    <span className="break-words text-xs text-muted-foreground">
-                      {item.tags}
-                    </span>
-                  )}
-                </TableCell>
-              )}
-            </TableRow>
+              </div>
+            </li>
           )
         })}
-      </TableBody>
+      </ul>
+      <label
+        htmlFor={id}
+        className="mt-3 flex items-center gap-2 px-1 py-2 text-sm font-medium text-muted-foreground"
+      >
+        <Checkbox
+          id={id}
+          checked={allOnPageSelected}
+          onChange={(event) => onTogglePageSelection(event.target.checked)}
+        />
+        <span>Select all on page</span>
+      </label>
       {selectedItems.size > 0 && (
-        <TableFooter className="bg-transparent">
-          <TableRow className="hover:bg-transparent">
-            <TableCell colSpan={hasAnyTags ? 6 : 5}>
-              {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
-            </TableCell>
-          </TableRow>
-        </TableFooter>
+        <div className="mt-2 px-1 text-sm text-muted-foreground">
+          {selectedItems.size} item{selectedItems.size !== 1 ? 's' : ''} selected
+        </div>
       )}
-    </Table>
+    </div>
   )
 }
 
@@ -175,7 +270,7 @@ function ButtonArchiveToggle({ item, onClick }: { item: PocketItem; onClick: () 
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 p-0 text-zinc-900 transition-colors hover:bg-zinc-200 hover:text-zinc-950"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 p-0 text-zinc-900 transition-colors hover:bg-zinc-200 hover:text-zinc-950 lg:h-7 lg:w-7"
       aria-label={label}
       title={label}
     >

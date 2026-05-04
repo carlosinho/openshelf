@@ -52,8 +52,7 @@ Versions prior to v0.30 considered legacy.
 
 ### v0.70 - Read/archived controls, mobile
 - [x] Do some actual controls for marking items read (aka. adding them to archive).
-- [ ] Title editing for items on the list.
-- [ ] Improve mobile.
+- [x] Improve mobile.
 
 ### v0.80 - API
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
@@ -72,6 +71,7 @@ Versions prior to v0.30 considered legacy.
 - [ ] Bulk status migration - add a safe way to flip all `unread` items to `archive` and all `archive` items to `unread`
 - [ ] Saved search history/tree UI. Saved search functionality with exact title/URL matching; using Origin UI tree elements; 1. Add saved search functionality to store each search query used. 2. Create search history UI in the search controls area; use the Origin UI tree element for this. 3. Integrate with existing search state management
 - [ ] Nested searches built on top of the saved-search tree. Basically, if someone looks for "WordPress" and then "plugins", they will see one tree node for "WordPress" and the other for "plugins" that's inside WordPress. So if they click into that, they will see results that have both "WordPress" and "plugins" in them.
+- [ ] Title editing for items on the list. (Not sure how actually useful that would be.)
 
 ## Known Issues / Tech Debt
 

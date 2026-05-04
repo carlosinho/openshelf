@@ -8,7 +8,9 @@
     <td valign="middle">
       <strong>OpenShelf</strong> is a self-hosted, single-user read-later manager built for people who want full control over their links.
       <br /><br />
-      It runs as a private web app on your own machine or server, and stores everything in a local SQLite database. It offers: CSV import from Pocket export files, strong filtering, cleanup tools, manual link adding, URL checks, CSV export, and downloadable SQLite backups.
+      It runs as a private web app on your own machine or server, stores everything in a local SQLite database, and gives you a simple workflow for adding links, filtering your library, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups.
+      <br /><br />
+      It can also import compatible CSV exports, including old Pocket exports, if you already have a link archive you want to bring with you.
     </td>
   </tr>
 </table>
@@ -19,28 +21,64 @@
 
 ## Why It Exists
 
-OpenShelf started as a browser-only CSV processor and has now been turned into a persistent local web app. The current implementation is for one operator who wants a private, local-first Pocket replacement without accounts, sync services, or external storage.
+OpenShelf exists because saved links deserve a better home than browser bookmark chaos or another hosted tool like Pocket (RIP).
+
+It is intentionally small: one operator, one private library, one SQLite database, and a workflow built around saving, filtering, archiving, cleaning up, exporting, and backing up links.
+
+It is not a hosted sync service, social bookmarking platform, or team knowledge base. It is a local-first personal link shelf you can run yourself.
+
+## Who OpenShelf Is For
+
+OpenShelf is for people who want a private, self-hosted place to manage saved links.
+
+It is a good fit if you:
+
+- Prefer self-hosted tools.
+- You were really fed up when Pocket went offline!
+- Want your links stored in a local database.
+- Want a simple read/archive workflow.
+- Want CSV export and raw database backups.
+- Want to clean up a large backlog of saved links.
+- Are comfortable running a small Dockerized web app.
+
+## Not For / Not Yet
+
+OpenShelf is intentionally simple today.
+
+It does not currently provide:
+
+- Hosted sync.
+- Multi-user accounts.
+- Team libraries.
+- Browser extensions.
+- Mobile apps.
+- Third-party auth.
+- Background workers.
+- Server-side search/querying.
+- Guaranteed performance for very large libraries.
+
+If you want one private link library that you run yourself, OpenShelf should fit. If you want a polished hosted read-later platform, it probably is not the right tool yet.
 
 ## What Exists Now
 
-- Import one or more Pocket CSV export files, including later merge imports from the main library view.
+- Add links manually.
+- Import compatible CSV link archives for initial setup or later merges.
 - Persist links in `data/openshelf.db`.
 - Protect the instance with one password and signed session cookies.
-- Browse the full library with header-based unread/archive status selection, search, platform filtering for Twitter/X, Reddit, and GitHub, date filtering, homepage-only filtering, sorting, pagination, and row selection.
-- Add one link manually.
-- Archive or unarchive one item from the list, archive or unarchive selected items, bulk delete selected items, or clear all archived items.
-- Export all items, the current filtered view, or selected rows to CSV from the browser.
-- Download a raw SQLite backup from the server.
-- Run browser-side URL checks against the current filtered unread set and save `valid` or `problem` results.
+- Browse the full library with unread/archive status selection, search, platform filters, date filters, homepage-only filtering, sorting, pagination, and row selection.
+- Archive, unarchive, bulk delete, or clear archived items.
+- Export all items, filtered views, or selected rows to CSV.
+- Download a raw SQLite backup.
+- Run browser-side URL checks against the current filtered unread set.
 
 ## Main User Flows
 
-### First Run
+### First Login
 
-1. Start the app.
-2. Log in with the instance password.
-3. If the database is empty, upload one or more Pocket CSV files.
-4. OpenShelf imports valid rows, skips duplicates, stores everything in SQLite, and then shows the main library view.
+1. Install and start the app on your machine or server.
+2. Open the app in the browser and log in with the instance password from `OPENSHELF_PASSWORD`.
+3. Add links manually, or import a compatible CSV if you already have a link archive.
+4. OpenShelf stores everything in `data/openshelf.db` and shows the main library view.
 
 ### Daily Use
 
@@ -81,33 +119,47 @@ If you set `NODE_ENV=production`, use HTTPS. The auth cookie becomes `Secure`, s
 
 ### Docker Compose
 
+For a real server install, put OpenShelf in a persistent directory such as `/opt/openshelf` so the checked-out app files, `.env`, and `./data` survive restarts and upgrades.
+
 ```bash
+git clone <your-repo-url> /opt/openshelf
+cd /opt/openshelf
 cp .env.example .env
-# this creates the env file
-# set the password you want to use in OPENSHELF_PASSWORD
-docker compose up --build
+# edit .env and set OPENSHELF_PASSWORD to a real password
+mkdir -p data
+docker compose up -d --build
 ```
 
-Open `http://localhost:3000`.
+Then open `http://YOUR_SERVER_IP:3000`.
+
+For local-only use on the same machine, you can run the same steps in any project directory and then open `http://localhost:3000`.
 
 Persistence:
 
 - Host `./data` is mounted to container `/app/data`.
 - The SQLite file is `data/openshelf.db`.
+- Keep `./data` and `.env` when updating the app.
+- To stop or restart later, run `docker compose stop`, `docker compose start`, or `docker compose up -d`.
 
 ### Bun On The Host
 
 ```bash
+git clone <your-repo-url> /opt/openshelf
+cd /opt/openshelf
 cp .env.example .env
-# this creates the env file
-# set the password you want to use in OPENSHELF_PASSWORD
+# edit .env and set OPENSHELF_PASSWORD to a real password
 bun install
 bun run start
 ```
 
-Open `http://localhost:3000`.
+Then open `http://YOUR_SERVER_IP:3000`.
 
 `bun run start` rebuilds the frontend and then starts the Bun server.
+
+Notes:
+
+- Keep the project directory persistent because OpenShelf stores its SQLite file in `data/openshelf.db`.
+- For a real server deployment, run the Bun process under a service manager such as `systemd`, `pm2`, or another supervisor so it starts again after reboot.
 
 ### Development
 
@@ -137,6 +189,8 @@ The webpack dev server proxies `/api/*` to `http://localhost:3000`.
 - The Docker image copies `dist/`, `server/`, `node_modules/`, and `package.json`, exposes port `3000`, and declares `/app/data` as a volume.
 - Static files are served from `dist/` whenever `NODE_ENV !== 'development'`.
 - If you run behind a reverse proxy and want secure cookies, set `NODE_ENV=production` and terminate TLS properly.
+- If `NODE_ENV=production`, logins must happen over HTTPS because the auth cookie becomes `Secure`.
+- When updating a server install, pull the new code, rebuild/restart the app, and keep the existing `.env` and `data/openshelf.db`.
 
 ## Project Structure
 
