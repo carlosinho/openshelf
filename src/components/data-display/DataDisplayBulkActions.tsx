@@ -1,4 +1,4 @@
-import { Archive, Download, RotateCcw, Trash2 } from 'lucide-react'
+import { Archive, BookMarked, Download, RotateCcw, Trash2 } from 'lucide-react'
 import { Button } from '../ui/button'
 
 interface DataDisplayBulkActionsProps {
@@ -7,6 +7,7 @@ interface DataDisplayBulkActionsProps {
   selectedArchivedCount: number
   onExportSelected: () => void
   onClearSelection: () => void
+  onOpenShelfPicker: () => void
   onToggleArchivedSelected: () => void
   onDeleteSelected: () => void
 }
@@ -17,6 +18,7 @@ export function DataDisplayBulkActions({
   selectedArchivedCount,
   onExportSelected,
   onClearSelection,
+  onOpenShelfPicker,
   onToggleArchivedSelected,
   onDeleteSelected,
 }: DataDisplayBulkActionsProps) {
@@ -54,6 +56,10 @@ export function DataDisplayBulkActions({
         >
           <Download className="opacity-60" size={16} aria-hidden="true" />
           Export selected
+        </Button>
+        <Button variant="outline" onClick={onOpenShelfPicker} className="gap-2">
+          <BookMarked className="opacity-60" size={16} aria-hidden="true" />
+          <span className="hidden lg:inline">Add to shelf</span>
         </Button>
         <Button
           variant="default"

@@ -37,6 +37,7 @@ Absent by design right now:
 
 - `data/openshelf.db` is the only persistent store.
 - Every saved link is an `items` row.
+- Shelves are separate entities that group items through explicit memberships and root-domain rules.
 - `items.url` is globally unique inside one OpenShelf instance.
 - Auth is instance-wide. There are no users, roles, or per-item ownership rules.
 - All `/api/*` routes require auth except `/api/health` and `/api/auth/login`.
@@ -60,8 +61,17 @@ Fields in the shared model:
 - `tags`: Pocket-style comma-separated tag string.
 - `status`: `unread` or `archive`.
 - `archived_at`: when the item was most recently moved to `archive`.
+- `shelf_ids`: resolved shelf memberships for the item, combining explicit shelf links and matching domain rules.
 - `validation_status`: optional URL-check result.
 - `validation_checked_at`: when URL validation last completed.
+
+There is also a shared `Shelf` type used by both the client and server:
+
+- `id`: shelf primary key.
+- `name`: user-defined shelf label.
+- `domains`: saved root-domain rules for that shelf.
+- `created_at`: Unix timestamp when the shelf was created.
+- `updated_at`: Unix timestamp when the shelf was most recently renamed.
 
 ## Persistence Model
 
@@ -88,11 +98,37 @@ Fields in the shared model:
 | `validation_status` | `TEXT` | Stores browser-side URL validation outcome. |
 | `validation_checked_at` | `INTEGER` | Timestamp of the most recent validation write-back. |
 
-Why there is only one table:
+### `shelves` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `id` | `INTEGER PRIMARY KEY AUTOINCREMENT` | Stable shelf identity for CRUD and item membership. |
+| `name` | `TEXT UNIQUE NOT NULL` | User-visible shelf label such as `work` or `important`. |
+| `created_at` | `INTEGER NOT NULL` | Shelf creation timestamp. |
+| `updated_at` | `INTEGER NOT NULL` | Shelf rename/update timestamp. |
+
+### `shelf_items` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `shelf_id` | `INTEGER NOT NULL` | Links the membership row to a shelf. |
+| `item_id` | `INTEGER NOT NULL` | Links the membership row to an item. |
+| `created_at` | `INTEGER NOT NULL` | Tracks when the explicit membership was created. |
+
+### `shelf_domain_rules` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `shelf_id` | `INTEGER NOT NULL` | Links the rule to a shelf. |
+| `domain` | `TEXT NOT NULL` | Root domain such as `example.com` or `example.co.uk`. |
+| `created_at` | `INTEGER NOT NULL` | Tracks when the rule was added. |
+
+Why the schema is still small:
 
 - There is no user model because the auth model is one shared password from the environment.
 - There is no session table because auth state lives in a signed cookie.
 - There is no saved-search, history, or settings table because those features do not exist yet.
+- Shelves use join tables and domain-rule tables instead of mutating `items`, because an item can belong to multiple shelves and deleting a shelf must not delete items.
 
 ## Main Data Flows
 
@@ -122,16 +158,19 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 
 ### Browse And Mutate Library
 
-1. `GET /api/items` returns all rows ordered by `time_added DESC, id DESC`.
-2. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, date, homepage-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
-3. The default authenticated library view enables only the unread checkbox in the header. Enabling both checkboxes behaves like the old "all" view, while disabling both produces an empty result set.
-4. Rows can display a small platform icon for recognized Twitter/X, Reddit, and GitHub links, derived from the stored URL in the browser.
-5. Row-level and bulk archive controls use `PATCH /api/items/:id` to flip `status` between `unread` and `archive`.
-6. The server sets `archived_at` when an item moves to `archive` and clears it when the item moves back to `unread`.
-7. Clear archived deletes every row whose `status` is `archive`.
-8. Manual add posts a URL to `POST /api/items`.
-9. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
-10. After every mutation, the frontend refetches the full library rather than patching local state incrementally.
+1. `GET /api/items` returns all rows ordered by `time_added DESC, id DESC`, with `shelf_ids` resolved from both explicit item memberships and matching root-domain rules.
+2. `GET /api/shelves` returns shelf metadata plus saved domain rules.
+3. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, shelf, date, homepage-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
+4. The default authenticated library view enables only the unread checkbox in the header. Enabling both checkboxes behaves like the old "all" view, while disabling both produces an empty result set.
+5. Rows can display a small platform icon for recognized Twitter/X, Reddit, and GitHub links, derived from the stored URL in the browser.
+6. Row-level and bulk archive controls use `PATCH /api/items/:id` to flip `status` between `unread` and `archive`.
+7. Row-level and bulk shelf controls can add explicit item memberships, while the shelf manager can create, rename, delete shelves, and remove domain rules.
+8. Adding a root domain to a shelf backfills all current matching items and causes future matching manual adds or imports to be linked to that shelf automatically.
+9. The server sets `archived_at` when an item moves to `archive` and clears it when the item moves back to `unread`.
+10. Clear archived deletes every row whose `status` is `archive`.
+11. Manual add posts a URL to `POST /api/items`.
+12. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
+13. After every mutation, the frontend refetches the full library and shelf list rather than patching local state incrementally.
 
 ### URL Validation
 
@@ -168,6 +207,8 @@ Important exception: persistence happens only after the full run resolves. If va
 
 - Imported items keep the `status` value from CSV.
 - Manually added items default to `unread`.
+- Items can belong to zero, one, or many shelves.
+- Domain shelf rules backfill current matching items and auto-attach future matching manual adds or imports.
 - Marking an item archived stores an `archived_at` timestamp; moving it back to unread clears that field.
 - Archived items can be deleted in bulk.
 - Items can be moved between `unread` and `archive` from the row actions or selected-items bulk actions.
@@ -186,6 +227,7 @@ Important exception: persistence happens only after the full run resolves. If va
 - `server/index.ts`: app assembly, health route, auth mount, auth middleware, static serving, and Bun startup
 - `server/auth.ts`: password login, logout, auth check, signed-cookie middleware
 - `server/routes/items.ts`: list/create/delete/bulk-delete/clear-archived/patch
+- `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
 - `server/routes/import.ts`: import/export/backup
 - `server/db.ts`: schema plus direct query helpers
 - `server/csv.ts`: CSV parsing, validation, dedupe, and export helpers
@@ -195,6 +237,7 @@ Important exception: persistence happens only after the full run resolves. If va
 - Auth: `/api/auth/login`, `/api/auth/logout`, `/api/auth/check`
 - Health: `/api/health`
 - Library: `/api/items`, `/api/items/:id`, `/api/items/bulk-delete`, `/api/items/clear-archived`
+- Shelves: `/api/shelves`, `/api/shelves/:id`, `/api/shelves/:id/items`, `/api/shelves/:id/domains`
 - Import/egress: `/api/import`, `/api/export`, `/api/backup`
 
 ### Error Model
@@ -221,6 +264,7 @@ Security boundary:
 
 - SQLite runs in WAL mode for simple local durability and concurrency behavior.
 - The app fetches the full dataset once and keeps most interaction client-side.
+- Shelf filtering stays client-side by using `shelf_ids` from the full `GET /api/items` payload.
 - Pagination is a client-side slice of the already filtered/sorted array.
 - URL validation only targets filtered unread items, not the full library, to limit operator impact.
 - Validation runs in batches of `10` with a `100ms` delay between batches.
@@ -231,6 +275,7 @@ Security boundary:
 
 - Import is partial-success by design: valid rows import, invalid rows are reported, duplicates are skipped.
 - Batch dedupe uses exact URL strings. It is not a semantic URL canonicalizer.
+- Domain shelf rules use root-domain matching via `tldts`, so subdomains like `www.example.com` and `blog.example.com` resolve to the same shelf rule target.
 - Manual add rejects invalid URLs and exact duplicates with explicit errors.
 - Manual add title fetching is best-effort and swallowed on failure; fallback title is the normalized URL.
 - Manual add title fetching has no explicit timeout in `server/routes/items.ts`, so a slow site can delay completion.
@@ -252,7 +297,7 @@ Security boundary:
 
 - The architecture is intentionally scoped to one shared library for one operator.
 - All items are loaded into browser memory at once.
-- Search, filtering, sorting, pagination, selection, and the main export path all scale with the in-memory list coordinated by `DataDisplay.tsx`.
+- Search, filtering, sorting, pagination, shelf filtering, selection, and the main export path all scale with the in-memory list coordinated by `DataDisplay.tsx`.
 - The main library UI has been split into `src/components/data-display/`, but `DataDisplay.tsx` still owns the central state and workflow orchestration for that screen.
 - There is no virtualization, server-side querying, background revalidation queue, or multi-process coordination.
 - The roadmap already calls out large-list performance as an open question above roughly `50k` items.
@@ -264,4 +309,5 @@ Security boundary:
 - TypeScript runs with `strict: true`.
 - The frontend and backend share types by direct import, which is simple but couples server code to `src/`.
 - Schema creation lives inline in `server/db.ts`; future schema changes will need manual migration work because no migration system exists yet.
+- Root-domain parsing depends on `tldts` so shelf domain rules work correctly for registrable domains such as `example.co.uk`.
 - The current shipped UI does not exercise every backend capability. Most notably, `/api/export` exists but is not used by the browser UI.

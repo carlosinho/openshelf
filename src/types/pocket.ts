@@ -6,9 +6,18 @@ export interface PocketItem {
   tags: string
   status: 'archive' | 'unread'
   archived_at?: number
+  shelf_ids: number[]
   // URL validation fields
   validation_status?: 'pending' | 'checking' | 'valid' | 'problem'
   validation_checked_at?: number
+}
+
+export interface Shelf {
+  id: number
+  name: string
+  domains: string[]
+  created_at: number
+  updated_at: number
 }
 
 export interface FileWithPreview {

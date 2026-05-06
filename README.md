@@ -6,11 +6,11 @@
       <img src="public/nookio-side.png" alt="OpenShelf logo" width="220" />
     </td>
     <td valign="middle">
-      <strong>OpenShelf</strong> is a self-hosted, single-user read-later manager built for people who want full control over their links.
+      <strong>OpenShelf</strong> is a self-hosted shelf for links you want to read later.
       <br /><br />
-      It runs as a private web app on your own machine or server, stores everything in a local SQLite database, and gives you a simple workflow for adding links, filtering your library, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups.
+      It is a single-user read-later manager built for people who want full control over their reading queue. 
       <br /><br />
-      It can also import compatible CSV exports, including old Pocket exports, if you already have a link archive you want to bring with you.
+      OpenShelf runs as a private web app, stores everything in a SQLite database, and gives you a simple workflow for adding links, organizing them into thematic shelves, filtering, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups. It can also import compatible CSV exports, including old Pocket exports, if you already have a link archive you want to bring with you.
     </td>
   </tr>
 </table>
@@ -21,22 +21,21 @@
 
 ## Why It Exists
 
-OpenShelf exists because saved links deserve a better home than browser bookmark chaos or another hosted tool like Pocket (RIP).
+OpenShelf exists because read-later links deserve a better home than browser bookmark chaos, endless open tabs, or another hosted tool like Pocket (RIP).
 
-It is intentionally small: one operator, one private library, one SQLite database, and a workflow built around saving, filtering, archiving, cleaning up, exporting, and backing up links.
+It is intentionally small: one operator, private reading queue, one SQLite database, and a workflow built around saving, organizing with shelves, filtering, archiving, cleaning up, exporting, and backing up links.
 
-It is not a hosted sync service, social bookmarking platform, or team knowledge base. It is a local-first personal link shelf you can run yourself.
+It is not a hosted sync service, social bookmarking platform, team knowledge base, or generic bookmark database. It is a local-first read-later link manager you can run yourself.
 
 ## Who OpenShelf Is For
 
-OpenShelf is for people who want a private, self-hosted place to manage saved links.
+OpenShelf is for people who want a private, self-hosted place to manage links they intend to read later.
 
 It is a good fit if you:
 
 - Prefer self-hosted tools.
-- You were really fed up when Pocket went offline!
-- Want your links stored in a local database.
-- Want a simple read/archive workflow.
+- Want your reading queue stored in SQLite.
+- Want a simple unread/archive workflow.
 - Want CSV export and raw database backups.
 - Want to clean up a large backlog of saved links.
 - Are comfortable running a small Dockerized web app.
@@ -57,7 +56,7 @@ It does not currently provide:
 - Server-side search/querying.
 - Guaranteed performance for very large libraries.
 
-If you want one private link library that you run yourself, OpenShelf should fit. If you want a polished hosted read-later platform, it probably is not the right tool yet.
+If you want one private read-later queue that you run yourself, OpenShelf should fit. If you want a polished hosted platform with sync and native apps, it probably is not the right tool yet.
 
 ## What Exists Now
 
@@ -65,8 +64,10 @@ If you want one private link library that you run yourself, OpenShelf should fit
 - Import compatible CSV link archives for initial setup or later merges.
 - Persist links in `data/openshelf.db`.
 - Protect the instance with one password and signed session cookies.
-- Browse the full library with unread/archive status selection, search, platform filters, date filters, homepage-only filtering, sorting, pagination, and row selection.
+- Create thematic shelves, rename them, delete them without deleting links, and add links or whole domains to them.
+- Browse the full library with unread/archive status selection, search, platform filters, shelf filters, date filters, homepage-only filtering, sorting, pagination, and row selection.
 - Archive, unarchive, bulk delete, or clear archived items.
+- Add selected rows to shelves from the bulk actions bar.
 - Export all items, filtered views, or selected rows to CSV.
 - Download a raw SQLite backup.
 - Run browser-side URL checks against the current filtered unread set.
@@ -84,8 +85,9 @@ If you want one private link library that you run yourself, OpenShelf should fit
 
 1. Log in.
 2. The app loads all items from `/api/items`.
-3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, and delete from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
-4. Optionally import more Pocket CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
+3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, delete, and organize with shelves from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
+4. Optionally create shelves such as `work`, `funny`, or `important`, add individual links to them, or attach an entire root domain so current and future links from that domain land on the same shelf automatically.
+5. Optionally import more Pocket CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
 
 ### Export And Backup
 
@@ -202,10 +204,12 @@ server/
   csv.ts              # Pocket CSV validation, parsing, merge, and export helpers
   routes/
     items.ts          # List, create, patch, delete, bulk-delete, clear-archived
+    shelves.ts        # Shelf CRUD, item assignment, and domain-rule routes
     import.ts         # CSV import, server-side CSV export, SQLite backup
 src/
   App.tsx             # Session bootstrap and top-level screen switching
   lib/api.ts          # Browser API client
+  lib/domain.ts       # Root-domain parsing shared by client and server
   components/
     FileUpload.tsx    # Reusable CSV import UI for onboarding and later merges
     LoginForm.tsx     # Password unlock screen
@@ -235,6 +239,12 @@ ARCHITECTURE.md
 | `DELETE` | `/api/items/:id` | Delete one item. |
 | `POST` | `/api/items/bulk-delete` | Delete many items by `ids`. |
 | `POST` | `/api/items/clear-archived` | Delete every row with `status = archive`. |
+| `GET` | `/api/shelves` | Return all shelves plus saved domain rules. |
+| `POST` | `/api/shelves` | Create one shelf by name. |
+| `PATCH` | `/api/shelves/:id` | Rename one shelf. |
+| `DELETE` | `/api/shelves/:id` | Delete one shelf without deleting items. |
+| `POST` | `/api/shelves/:id/items` | Add one or more item ids to a shelf. |
+| `POST` | `/api/shelves/:id/domains` | Add a root-domain rule to a shelf and backfill current matches. |
 | `POST` | `/api/import` | Multipart CSV import. Field name: `files`. |
 | `GET` | `/api/export?scope=all|archive|unread` | Server-side CSV export. |
 | `GET` | `/api/backup` | Download a raw SQLite backup. |
@@ -257,6 +267,9 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
 
 - Duplicate-looking links still appear.  
   Deduplication is based on exact URL strings. Manual adds normalize URLs first; imported CSV rows do not. Two URLs that look equivalent after redirects are not automatically merged unless their stored strings match.
+
+- A domain shelf rule seems broader than expected.  
+  Shelf rules match the root domain, so `www.example.com` and `blog.example.com` both count as `example.com`.
 
 - A manually added link is slow to save or ends up titled as the URL.  
   The server tries to fetch a page title first. If that fetch is blocked or fails, OpenShelf falls back to the normalized URL string.

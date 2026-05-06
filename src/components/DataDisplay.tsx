@@ -1,9 +1,23 @@
 import React, { useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { usePagination } from '../hooks/use-pagination'
+import { getRootDomainFromUrl } from '../lib/domain'
 import { type SupportedPlatform, detectPlatformFromUrl } from '../lib/platforms'
-import { ApiError, bulkDeleteItems, clearArchivedItems, createItem, patchItem } from '../lib/api'
-import { PocketItem } from '../types/pocket'
+import {
+  addDomainToShelf,
+  addItemsToShelf as addItemsToShelfApi,
+  ApiError,
+  bulkDeleteItems,
+  clearArchivedItems,
+  createItem,
+  createShelf as createShelfApi,
+  deleteShelf as deleteShelfApi,
+  patchItem,
+  removeItemFromShelf as removeItemFromShelfApi,
+  removeDomainFromShelf,
+  renameShelf as renameShelfApi,
+} from '../lib/api'
+import { PocketItem, Shelf } from '../types/pocket'
 import { exportToPocketCSV } from '../utils/csvParser'
 import {
   validateUrls,
@@ -19,12 +33,15 @@ import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeader
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
 import { DataDisplayListControls } from './data-display/DataDisplayListControls'
 import { DataDisplayPagination } from './data-display/DataDisplayPagination'
+import { ShelfAssignmentDialog } from './data-display/ShelfAssignmentDialog'
+import { ShelfManagerDialog } from './data-display/ShelfManagerDialog'
 import { DataDisplayTable } from './data-display/DataDisplayTable'
 import { DataDisplayValidationStatus } from './data-display/DataDisplayValidationStatus'
 import { isHomepage } from './data-display/isHomepage'
 
 interface DataDisplayProps {
   data: PocketItem[]
+  shelves: Shelf[]
   className?: string
   onRefresh?: () => Promise<void> | void
 }
@@ -32,8 +49,15 @@ interface DataDisplayProps {
 type SortDirection = 'asc' | 'desc'
 type StatusFilterKey = 'unread' | 'archive'
 type PlatformFilterKey = SupportedPlatform
+type ShelfAssignmentState = {
+  title: string
+  description: string
+  itemIds: number[]
+  existingShelfIds: number[]
+  availableDomains: string[]
+}
 
-export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
+export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplayProps) {
   const id = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -46,6 +70,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     reddit: false,
     github: false,
   })
+  const [selectedShelfIds, setSelectedShelfIds] = useState<number[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set())
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(50)
@@ -74,6 +99,8 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
   )
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isActionsOpen, setIsActionsOpen] = useState(false)
+  const [shelfAssignmentState, setShelfAssignmentState] = useState<ShelfAssignmentState | null>(null)
+  const [isShelfManagerOpen, setIsShelfManagerOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   const addLinkInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -211,6 +238,16 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     return data.filter((item) => selectedItems.has(item.id))
   }, [data, selectedItems])
 
+  const getAvailableDomainsForItems = (items: PocketItem[]) => {
+    return Array.from(
+      new Set(
+        items
+          .map((item) => getRootDomainFromUrl(item.url))
+          .filter((domain): domain is string => domain !== null)
+      )
+    ).sort((left, right) => left.localeCompare(right))
+  }
+
   const filteredAndSortedData = useMemo(() => {
     const filtered = data.filter((item) => {
       const normalizedSearchQuery = searchQuery.toLowerCase()
@@ -228,6 +265,10 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
       const hasSelectedPlatforms = Object.values(selectedPlatforms).some(Boolean)
       const matchesPlatform =
         !hasSelectedPlatforms || (platform !== null && selectedPlatforms[platform])
+
+      const matchesShelf =
+        selectedShelfIds.length === 0 ||
+        item.shelf_ids.some((shelfId) => selectedShelfIds.includes(shelfId))
 
       let matchesDate = true
       if (dateFilter.mode !== 'none') {
@@ -275,6 +316,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         matchesSearch &&
         matchesStatus &&
         matchesPlatform &&
+        matchesShelf &&
         matchesDate &&
         matchesHomepage
       )
@@ -294,6 +336,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     onlyHomepages,
     searchQuery,
     selectedPlatforms,
+    selectedShelfIds,
     selectedStatuses,
     sortDirection,
   ])
@@ -454,6 +497,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     dateFilter.mode !== 'none',
     onlyHomepages,
     Object.values(selectedPlatforms).some(Boolean),
+    selectedShelfIds.length > 0,
   ].filter(Boolean).length
   const hasActiveFilters = activeFilterCount > 0
   const hasSelectedStatuses = selectedStatuses.unread || selectedStatuses.archive
@@ -472,6 +516,12 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
       ...prev,
       [platform]: !prev[platform],
     }))
+  }
+
+  const toggleShelfFilter = (shelfId: number) => {
+    setSelectedShelfIds((prev) =>
+      prev.includes(shelfId) ? prev.filter((id) => id !== shelfId) : [...prev, shelfId]
+    )
   }
 
   React.useEffect(() => {
@@ -517,7 +567,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
 
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedStatuses, selectedPlatforms, itemsPerPage, dateFilter, onlyHomepages])
+  }, [searchQuery, selectedStatuses, selectedPlatforms, selectedShelfIds, itemsPerPage, dateFilter, onlyHomepages])
 
   React.useEffect(() => {
     return () => {
@@ -537,11 +587,89 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
     setSearchQuery('')
     setDateFilter({ mode: 'none' })
     setOnlyHomepages(false)
+    setSelectedShelfIds([])
     setSelectedPlatforms({
       twitter: false,
       reddit: false,
       github: false,
     })
+  }
+
+  const handleCreateShelf = async (name: string) => {
+    const shelf = await createShelfApi(name)
+    await onRefresh?.()
+    return shelf
+  }
+
+  const handleRenameShelf = async (shelfId: number, name: string) => {
+    await renameShelfApi(shelfId, name)
+    await onRefresh?.()
+  }
+
+  const handleDeleteShelf = async (shelfId: number) => {
+    await deleteShelfApi(shelfId)
+    setSelectedShelfIds((prev) => prev.filter((id) => id !== shelfId))
+    await onRefresh?.()
+  }
+
+  const handleRemoveShelfDomain = async (shelfId: number, domain: string) => {
+    await removeDomainFromShelf(shelfId, domain)
+    await onRefresh?.()
+  }
+
+  const openSingleItemShelfPicker = (item: PocketItem) => {
+    setShelfAssignmentState({
+      title: 'Add to shelf',
+      description: 'Choose a shelf, then add just this link or the whole domain.',
+      itemIds: [item.id],
+      existingShelfIds: item.shelf_ids,
+      availableDomains: getAvailableDomainsForItems([item]),
+    })
+  }
+
+  const openBulkShelfPicker = () => {
+    if (selectedData.length === 0) {
+      return
+    }
+
+    setShelfAssignmentState({
+      title: 'Add selected items to shelf',
+      description: 'Choose a shelf, then add the selected links or one root domain from the selection.',
+      itemIds: selectedData.map((item) => item.id),
+      existingShelfIds: [],
+      availableDomains: getAvailableDomainsForItems(selectedData),
+    })
+  }
+
+  const handleAddItemsToShelves = async (shelfIds: number[], itemIds: number[]) => {
+    if (shelfIds.length === 0) {
+      return
+    }
+
+    await Promise.all(shelfIds.map((shelfId) => addItemsToShelfApi(shelfId, itemIds)))
+    await onRefresh?.()
+  }
+
+  const handleRemoveItemsFromShelves = async (shelfIds: number[], itemIds: number[]) => {
+    if (shelfIds.length === 0 || itemIds.length === 0) {
+      return
+    }
+
+    await Promise.all(
+      shelfIds.flatMap((shelfId) =>
+        itemIds.map((itemId) => removeItemFromShelfApi(shelfId, itemId))
+      )
+    )
+    await onRefresh?.()
+  }
+
+  const handleAddDomainToShelves = async (shelfIds: number[], domain: string) => {
+    if (shelfIds.length === 0) {
+      return
+    }
+
+    await Promise.all(shelfIds.map((shelfId) => addDomainToShelf(shelfId, domain)))
+    await onRefresh?.()
   }
 
   const handleTogglePageSelection = (checked: boolean) => {
@@ -639,6 +767,10 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
               setIsActionsOpen(false)
             }}
             onToggleImportCsv={handleToggleImportCsv}
+            onOpenShelfManager={() => {
+              setIsShelfManagerOpen(true)
+              setIsActionsOpen(false)
+            }}
             onStartValidation={() => {
               void handleStartValidation()
               setIsActionsOpen(false)
@@ -693,12 +825,15 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         hasActiveFilters={hasActiveFilters}
         onlyHomepages={onlyHomepages}
         selectedPlatforms={selectedPlatforms}
+        shelves={shelves}
+        selectedShelfIds={selectedShelfIds}
         dateFilter={dateFilter}
         onToggleFiltersOpen={() => setIsFiltersOpen((prev) => !prev)}
         onSearchQueryChange={setSearchQuery}
         onResetFilters={handleResetFilters}
         onOnlyHomepagesChange={setOnlyHomepages}
         onTogglePlatformFilter={togglePlatformFilter}
+        onToggleShelfFilter={toggleShelfFilter}
         onDateFilterChange={setDateFilter}
       />
 
@@ -723,6 +858,7 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         selectedArchivedCount={selectedArchivedCount}
         onExportSelected={handleExportSelected}
         onClearSelection={() => setSelectedItems(new Set())}
+        onOpenShelfPicker={openBulkShelfPicker}
         onToggleArchivedSelected={() => {
           void handleToggleSelectedArchived()
         }}
@@ -742,11 +878,13 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         dateFilter={dateFilter}
         onlyHomepages={onlyHomepages}
         selectedPlatforms={selectedPlatforms}
+        selectedShelfIdsCount={selectedShelfIds.length}
         onTogglePageSelection={handleTogglePageSelection}
         onToggleItemSelection={handleToggleItemSelection}
         onToggleArchived={(item) => {
           void handleToggleArchived(item)
         }}
+        onOpenShelfPicker={openSingleItemShelfPicker}
       />
 
       <DataDisplayPagination
@@ -760,6 +898,37 @@ export function DataDisplay({ data, className, onRefresh }: DataDisplayProps) {
         showRightEllipsis={showRightEllipsis}
         onPageChange={setCurrentPage}
       />
+
+      {shelfAssignmentState ? (
+        <ShelfAssignmentDialog
+          title={shelfAssignmentState.title}
+          description={shelfAssignmentState.description}
+          shelves={shelves}
+          existingShelfIds={shelfAssignmentState.existingShelfIds}
+          itemCount={shelfAssignmentState.itemIds.length}
+          availableDomains={shelfAssignmentState.availableDomains}
+          onClose={() => setShelfAssignmentState(null)}
+          onCreateShelf={handleCreateShelf}
+          onAddItemsToShelves={(shelfIds) =>
+            handleAddItemsToShelves(shelfIds, shelfAssignmentState.itemIds)
+          }
+          onRemoveItemsFromShelves={(shelfIds) =>
+            handleRemoveItemsFromShelves(shelfIds, shelfAssignmentState.itemIds)
+          }
+          onAddDomainToShelves={handleAddDomainToShelves}
+        />
+      ) : null}
+
+      {isShelfManagerOpen ? (
+        <ShelfManagerDialog
+          shelves={shelves}
+          onClose={() => setIsShelfManagerOpen(false)}
+          onCreateShelf={handleCreateShelf}
+          onRenameShelf={handleRenameShelf}
+          onDeleteShelf={(shelfId) => handleDeleteShelf(shelfId)}
+          onRemoveDomain={handleRemoveShelfDomain}
+        />
+      ) : null}
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { Label } from '../ui/label'
 import { Switch } from '../ui/switch'
 import { DateRangeFilter, type DateFilterValue } from '../ui/date-range-filter'
 import { PLATFORM_OPTIONS, type SupportedPlatform } from '../../lib/platforms'
+import type { Shelf } from '../../types/pocket'
 import { cn } from '../../lib/utils'
 import { PlatformIcon } from './dataDisplayBadges'
 
@@ -16,12 +17,15 @@ interface DataDisplayFiltersProps {
   hasActiveFilters: boolean
   onlyHomepages: boolean
   selectedPlatforms: Record<SupportedPlatform, boolean>
+  shelves: Shelf[]
+  selectedShelfIds: number[]
   dateFilter: DateFilterValue
   onToggleFiltersOpen: () => void
   onSearchQueryChange: (value: string) => void
   onResetFilters: () => void
   onOnlyHomepagesChange: (checked: boolean) => void
   onTogglePlatformFilter: (platform: SupportedPlatform) => void
+  onToggleShelfFilter: (shelfId: number) => void
   onDateFilterChange: (value: DateFilterValue) => void
 }
 
@@ -34,12 +38,15 @@ export function DataDisplayFilters({
   hasActiveFilters,
   onlyHomepages,
   selectedPlatforms,
+  shelves,
+  selectedShelfIds,
   dateFilter,
   onToggleFiltersOpen,
   onSearchQueryChange,
   onResetFilters,
   onOnlyHomepagesChange,
   onTogglePlatformFilter,
+  onToggleShelfFilter,
   onDateFilterChange,
 }: DataDisplayFiltersProps) {
   return (
@@ -80,24 +87,43 @@ export function DataDisplayFilters({
       {isFiltersOpen && (
         <div className="mt-3 rounded-lg border bg-card p-4">
           {hasActiveFilters && (
-            <div className="mb-4 flex justify-end">
-              <Button variant="ghost" size="sm" onClick={onResetFilters}>
-                Reset filters
+            <div className="mb-4 flex justify-start">
+              <Button variant="secondary" size="sm" onClick={onResetFilters}>
+                🔄️ Reset filters
               </Button>
             </div>
           )}
           <div className="grid gap-4 md:grid-cols-[38.2%_1fr]">
             <fieldset className="space-y-4">
-              <div className="inline-flex items-center gap-2">
-                <Switch
-                  id={`${id}-homepage-filter`}
-                  checked={onlyHomepages}
-                  onCheckedChange={onOnlyHomepagesChange}
-                  aria-label="Show only homepages"
-                />
-                <Label htmlFor={`${id}-homepage-filter`} className="text-sm font-medium">
-                  Only homepages
-                </Label>
+              <div className="space-y-2">
+                <div className="text-sm font-medium">Shelves</div>
+                {shelves.length === 0 ? (
+                  <div className="text-sm text-muted-foreground">No shelves created yet.</div>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {shelves.map((shelf) => {
+                      const isSelected = selectedShelfIds.includes(shelf.id)
+
+                      return (
+                        <Button
+                          key={shelf.id}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onToggleShelfFilter(shelf.id)}
+                          className={cn(
+                            'gap-2',
+                            isSelected &&
+                              'border-slate-900 bg-slate-900 text-slate-50 hover:bg-slate-800 hover:text-slate-50'
+                          )}
+                          aria-pressed={isSelected}
+                        >
+                          {shelf.name}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -126,6 +152,18 @@ export function DataDisplayFilters({
                     )
                   })}
                 </div>
+              </div>
+
+              <div className="inline-flex items-center gap-2">
+                <Switch
+                  id={`${id}-homepage-filter`}
+                  checked={onlyHomepages}
+                  onCheckedChange={onOnlyHomepagesChange}
+                  aria-label="Show only homepages"
+                />
+                <Label htmlFor={`${id}-homepage-filter`} className="text-sm font-medium">
+                  Only homepages
+                </Label>
               </div>
             </fieldset>
 

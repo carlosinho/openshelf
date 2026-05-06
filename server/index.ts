@@ -4,6 +4,7 @@ import { authRoutes, initializeAuth, requireAuth } from './auth'
 import { getItemCount } from './db'
 import { importRoutes } from './routes/import'
 import { itemsRoutes } from './routes/items'
+import { shelvesRoutes } from './routes/shelves'
 
 await initializeAuth()
 
@@ -20,6 +21,7 @@ app.get('/api/health', (c) => {
 app.route('/api/auth', authRoutes)
 app.use('/api/*', requireAuth)
 app.route('/api/items', itemsRoutes)
+app.route('/api/shelves', shelvesRoutes)
 app.route('/api', importRoutes)
 
 app.get('*', async (c) => {

@@ -1,4 +1,4 @@
-import type { PocketItem } from '../types/pocket'
+import type { PocketItem, Shelf } from '../types/pocket'
 
 export class ApiError extends Error {
   status: number
@@ -69,6 +69,10 @@ export async function fetchItems() {
   return apiRequest<PocketItem[]>('/api/items')
 }
 
+export async function fetchShelves() {
+  return apiRequest<Shelf[]>('/api/shelves')
+}
+
 export async function createItem(input: { url: string; title?: string; tags?: string }) {
   return apiRequest<PocketItem>('/api/items', {
     method: 'POST',
@@ -116,4 +120,53 @@ export async function importFiles(files: File[]) {
     method: 'POST',
     body: formData,
   })
+}
+
+export async function createShelf(name: string) {
+  return apiRequest<Shelf>('/api/shelves', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function renameShelf(id: number, name: string) {
+  return apiRequest<Shelf>(`/api/shelves/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function deleteShelf(id: number) {
+  return apiRequest<{ ok: true; deleted: number }>(`/api/shelves/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function addItemsToShelf(shelfId: number, itemIds: number[]) {
+  return apiRequest<{ ok: true; added: number }>(`/api/shelves/${shelfId}/items`, {
+    method: 'POST',
+    body: JSON.stringify({ itemIds }),
+  })
+}
+
+export async function removeItemFromShelf(shelfId: number, itemId: number) {
+  return apiRequest<{ ok: true; deleted: number }>(`/api/shelves/${shelfId}/items/${itemId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function addDomainToShelf(shelfId: number, domain: string) {
+  return apiRequest<{ ok: true; domain: string; added: number }>(`/api/shelves/${shelfId}/domains`, {
+    method: 'POST',
+    body: JSON.stringify({ domain }),
+  })
+}
+
+export async function removeDomainFromShelf(shelfId: number, domain: string) {
+  return apiRequest<{ ok: true; deleted: number }>(
+    `/api/shelves/${shelfId}/domains/${encodeURIComponent(domain)}`,
+    {
+      method: 'DELETE',
+    }
+  )
 }

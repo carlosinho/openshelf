@@ -1,4 +1,4 @@
-import { Archive, ExternalLink, HelpCircle, RotateCcw } from 'lucide-react'
+import { Archive, BookMarked, ExternalLink, HelpCircle, RotateCcw } from 'lucide-react'
 import { Checkbox } from '../ui/checkbox'
 import { Tooltip } from '../ui/tooltip'
 import {
@@ -27,9 +27,11 @@ interface DataDisplayTableProps {
   dateFilter: DateFilterValue
   onlyHomepages: boolean
   selectedPlatforms: Record<SupportedPlatform, boolean>
+  selectedShelfIdsCount: number
   onTogglePageSelection: (checked: boolean) => void
   onToggleItemSelection: (itemId: number, checked: boolean) => void
   onToggleArchived: (item: PocketItem) => void
+  onOpenShelfPicker: (item: PocketItem) => void
 }
 
 export function DataDisplayTable({
@@ -43,9 +45,11 @@ export function DataDisplayTable({
   dateFilter,
   onlyHomepages,
   selectedPlatforms,
+  selectedShelfIdsCount,
   onTogglePageSelection,
   onToggleItemSelection,
   onToggleArchived,
+  onOpenShelfPicker,
 }: DataDisplayTableProps) {
   if (filteredAndSortedData.length === 0) {
     return (
@@ -55,7 +59,8 @@ export function DataDisplayTable({
           !hasSelectedStatuses ||
           dateFilter.mode !== 'none' ||
           onlyHomepages ||
-          Object.values(selectedPlatforms).some(Boolean)
+          Object.values(selectedPlatforms).some(Boolean) ||
+          selectedShelfIdsCount > 0
             ? 'No items match your filters.'
             : 'No items to display.'}
         </div>
@@ -76,6 +81,7 @@ export function DataDisplayTable({
         onTogglePageSelection={onTogglePageSelection}
         onToggleItemSelection={onToggleItemSelection}
         onToggleArchived={onToggleArchived}
+        onOpenShelfPicker={onOpenShelfPicker}
       />
       <Table className="hidden lg:table">
         <TableHeader>
@@ -120,6 +126,7 @@ export function DataDisplayTable({
                       }
                     />
                     <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
+                    <ButtonShelfToggle item={item} onClick={() => onOpenShelfPicker(item)} />
                   </div>
                 </TableCell>
                 <TableCell className="font-medium">
@@ -186,6 +193,7 @@ interface MobileCardListProps {
   onTogglePageSelection: (checked: boolean) => void
   onToggleItemSelection: (itemId: number, checked: boolean) => void
   onToggleArchived: (item: PocketItem) => void
+  onOpenShelfPicker: (item: PocketItem) => void
 }
 
 function MobileCardList({
@@ -196,6 +204,7 @@ function MobileCardList({
   onTogglePageSelection,
   onToggleItemSelection,
   onToggleArchived,
+  onOpenShelfPicker,
 }: MobileCardListProps) {
   return (
     <div className="lg:hidden">
@@ -219,6 +228,7 @@ function MobileCardList({
                   }
                 />
                 <ButtonArchiveToggle item={item} onClick={() => onToggleArchived(item)} />
+                <ButtonShelfToggle item={item} onClick={() => onOpenShelfPicker(item)} />
               </div>
               <div className="min-w-0 flex-1">
                 <a
@@ -275,6 +285,25 @@ function ButtonArchiveToggle({ item, onClick }: { item: PocketItem; onClick: () 
       title={label}
     >
       {isArchived ? <RotateCcw className="w-3 h-3" /> : <Archive className="w-3 h-3" />}
+    </button>
+  )
+}
+
+function ButtonShelfToggle({ item, onClick }: { item: PocketItem; onClick: () => void }) {
+  const label =
+    item.shelf_ids.length > 0
+      ? `Add item to shelf (${item.shelf_ids.length} shelf${item.shelf_ids.length !== 1 ? 's' : ''} already)`
+      : 'Add item to shelf'
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-zinc-300 bg-zinc-100 p-0 text-zinc-900 transition-colors hover:bg-zinc-200 hover:text-zinc-950 lg:h-7 lg:w-7"
+      aria-label={label}
+      title={label}
+    >
+      <BookMarked className="w-3 h-3" />
     </button>
   )
 }

@@ -5,27 +5,29 @@ import { Navbar } from './components/Navbar'
 import { KarolBadge } from './components/KarolBadge'
 import { KarolFooter } from './components/KarolFooter'
 import { LoginForm } from './components/LoginForm'
-import { PocketItem } from './types/pocket'
+import { PocketItem, Shelf } from './types/pocket'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './components/ui/accordion'
 import { Database, Download, ShieldCheck } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { ApiError, checkAuth, fetchItems, login, logout } from './lib/api'
+import { ApiError, checkAuth, fetchItems, fetchShelves, login, logout } from './lib/api'
 
 function App() {
   const [data, setData] = useState<PocketItem[]>([])
-  const [hasData, setHasData] = useState(false)
+  const [shelves, setShelves] = useState<Shelf[]>([])
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
 
   const handleDataParsed = (items: PocketItem[]) => {
     setData(items)
-    setHasData(items.length > 0)
   }
 
-  const refetchItems = async () => {
-    const items = await fetchItems()
+  const hasLibraryContent = data.length > 0 || shelves.length > 0
+
+  const refetchLibrary = async () => {
+    const [items, nextShelves] = await Promise.all([fetchItems(), fetchShelves()])
     handleDataParsed(items)
+    setShelves(nextShelves)
   }
 
   useEffect(() => {
@@ -34,12 +36,13 @@ function App() {
         await checkAuth()
         setIsAuthenticated(true)
         setAuthError(null)
-        await refetchItems()
+        await refetchLibrary()
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {
           setIsAuthenticated(false)
           setAuthError(null)
           handleDataParsed([])
+          setShelves([])
         } else {
           setAuthError(error instanceof Error ? error.message : 'Failed to connect to OpenShelf.')
         }
@@ -56,7 +59,7 @@ function App() {
       await login(password)
       setIsAuthenticated(true)
       setAuthError(null)
-      await refetchItems()
+      await refetchLibrary()
     } catch (error) {
       setIsAuthenticated(false)
       setAuthError(error instanceof Error ? error.message : 'Failed to unlock OpenShelf.')
@@ -70,6 +73,7 @@ function App() {
       setIsAuthenticated(false)
       setAuthError(null)
       handleDataParsed([])
+      setShelves([])
     }
   }
 
@@ -88,7 +92,7 @@ function App() {
             </div>
           ) : !isAuthenticated ? (
             <LoginForm onSubmit={handleLogin} error={authError} />
-          ) : !hasData ? (
+          ) : !hasLibraryContent ? (
             <div className="bg-card">
               <div className="mb-6">
                 <Accordion type="single" collapsible className="w-full">
@@ -130,19 +134,19 @@ function App() {
                 </Button>
               </div>
 
-              <FileUpload onImportComplete={refetchItems} />
+              <FileUpload onImportComplete={refetchLibrary} />
             </div>
           ) : (
             <div className="space-y-6">
               <div className="bg-card">
-                <DataDisplay data={data} onRefresh={refetchItems} />
+                <DataDisplay data={data} shelves={shelves} onRefresh={refetchLibrary} />
               </div>
             </div>
           )}
         </main>
       </div>
 
-      {isAuthenticated && hasData && (
+      {isAuthenticated && hasLibraryContent && (
         <div className="container mx-auto mt-16 px-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -163,7 +167,7 @@ function App() {
       )}
       
       {/* Footer */}
-      <KarolFooter version="ver 0.71" className={isAuthenticated && hasData ? 'mt-4' : ''} />
+      <KarolFooter version="ver 0.73" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
       
       {/* Karol Badge - floating face 
       <KarolBadge />*/}

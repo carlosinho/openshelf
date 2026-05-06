@@ -1,5 +1,5 @@
 import type { Ref } from 'react'
-import { ChevronDown, Download, Plus, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import { BookMarked, ChevronDown, Download, Plus, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip } from '../ui/tooltip'
 
@@ -17,6 +17,7 @@ interface DataDisplayHeaderActionsProps {
   onStartValidation: () => void
   onCancelValidation: () => void
   onClearArchived: () => void
+  onOpenShelfManager: () => void
   onToggleAddLink: () => void
 }
 
@@ -34,6 +35,7 @@ export function DataDisplayHeaderActions({
   onStartValidation,
   onCancelValidation,
   onClearArchived,
+  onOpenShelfManager,
   onToggleAddLink,
 }: DataDisplayHeaderActionsProps) {
   return (
@@ -81,6 +83,15 @@ export function DataDisplayHeaderActions({
             >
               <Upload className="size-4 opacity-60" aria-hidden="true" />
               Import CSV
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenShelfManager}
+              className="w-full justify-start gap-2"
+            >
+              <BookMarked className="size-4 opacity-60" aria-hidden="true" />
+              Manage shelves
             </Button>
             {!isValidationRunning ? (
               <Tooltip content="Checks only links from unread items in the current view">

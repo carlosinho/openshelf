@@ -6,9 +6,9 @@
 - v0.40 - cleaner UI for daily use
 - v0.50 - new branding
 - v0.60 - code refactor
-- v0.70 - read/archived controls, mobile improvements
+- v0.70 - read/archived controls, mobile improvements, shelves
 
-> OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
+> OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, shelves, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
 
 ## Roadmap
 
@@ -50,44 +50,81 @@ Versions prior to v0.30 considered legacy.
 - [x] Improve Twitter and Reddit link fetches.
     - The app couldn't get titles for tweets and Reddit pages.
 
-### v0.70 - Read/archived controls, mobile
+### v0.70 - Read/archived controls, mobile, shelves
 - [x] Do some actual controls for marking items read (aka. adding them to archive).
 - [x] Improve mobile.
+- [x] Shelves
+    - Thematic shelves where the user can add individual reading links or entire domains.
+    - User can create shelves, name them whatever they wish, like "work" or "funny" or "important"
+    - They can do basic admin tasks to the shelves - rename, delete (if a shelf deleted, no items should be deleted)
+    - Any link can be added to any shelf. 
+    - There should also be an option to add the entire domain to a shelf. If that happens then all links from that same domain are automatically added to that shelf, and all future links from that domain end on that shelf as well.
+    - Adding to the shelf should be done by a button next to where the archive buttons for links are now. When clicked, the user gets to pick a shelf and decide whether to add just the link or the entire domain. 
+    - Adding to shelf should also be possible when selecting multiple items from the list - from that selection box that appears which now lets the user to export, archive, delete.
+    - Shelf selection should be added to the filters menu, below "Platforms".
 
-### v0.80 - API
+### v0.80 - Better welcome features
+- [ ] URL normalization during import.
+    - Right now, manual link adding normalizes URLs, but CSV import does not.
+    - That means `https://site.com/x`, `https://site.com/x/`, and tracking-param variants can slip through as separate items.
+- [ ] Imports from popular read later apps
+    - Right now we only handle imports from Pocket, we need more: Matter, Readwise, Raindrop, Instapaper.
+- [ ] A stronger server-side checker for URL validation (the "check URLs" feature)
+    - URL validation is a browser-side iframe workaround, so it can only classify links as `valid` or `problem` and will never be fully reliable. Building a more reliable method that actually detects everything correctly has proven hard on the previous serverless setup that this app was on (pre pivot) since calls from user browsers like that to get HTTP headers are usually blocked - the iframe method was used as a workaround.
+
+### v0.90 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
-
-### v0.90 - Selfbrand
-- [ ] The idea is to make it available for users to make their own instance of this fit their brand
+- [ ] Make it possible for users to make their own instance of OpenShelf fit their brand
     - Option to upload their own logo.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
+
+### v0.100 - Advanced filtering and imports
+- [ ] Import mapping wizard for unknown CSVs
+    - This is for importing generic “URL/title/date” CSVs.
+    - Let the user map columns like `url`, `title`, `created_at`, `tags`, `status` instead of rejecting the file. This would make OpenShelf usable for random old exports and hand-built spreadsheets.
+- [ ] Bulk domain actions.
+    - Things like “archive all from this domain”, “delete all from this domain”, “move domain to shelf”.
+- [ ] More built-in filter views.
+    - New filter views for `added this week`, `1-6 months old`, `older than 1 year`. 
+    - New filter views for `untitled links`, `problem URLs`. These can be high-value for inherited or migrated archives.
+- [ ] Bring back "archive cleanup"
+    - There is an "archive cleanup" feature that's a leftover from a previous iteration of the app. The code for that feature is still there but there is no interface for it now. Let's add a simple interface back. Add a new option under the Actions drop down. Just call it "Wipe archive". Add another confirmation for this one. We don't want users clicking it by accident and having the entire archive deleted.
 
 ### Backlog / Future
 - [ ] Filter connectors
     - Right now, the built in filters include platforms like Twitter, GitHub, Reddit. The user should be able to add their own filters for other platforms if they way to.
     - This will let users have filters for sites they actually store content from the most often.
     - Pick the best way of making it possible: (a) just a form to enter platform URL, path to logo, or maybe (b) a json file with definition, or maybe (c) something else that's better.
-- [ ] Performance validation and optimization - verify behavior with very large Pocket exports and only optimize where real bottlenecks show up
+- [ ] Performance validation and optimization - verify behavior with very large datasets and only optimize where real bottlenecks show up
 - [ ] Bulk status migration - add a safe way to flip all `unread` items to `archive` and all `archive` items to `unread`
-- [ ] Saved search history/tree UI. Saved search functionality with exact title/URL matching; using Origin UI tree elements; 1. Add saved search functionality to store each search query used. 2. Create search history UI in the search controls area; use the Origin UI tree element for this. 3. Integrate with existing search state management
-- [ ] Nested searches built on top of the saved-search tree. Basically, if someone looks for "WordPress" and then "plugins", they will see one tree node for "WordPress" and the other for "plugins" that's inside WordPress. So if they click into that, they will see results that have both "WordPress" and "plugins" in them.
+- [ ] Saved search history/tree UI. Saved search functionality with exact title/URL matching; using Origin UI tree elements; 
+    - Add saved search functionality to store each search query used. 
+    - Create search history UI in the search controls area; use the Origin UI tree element for this. 
+    - Integrate with existing search state management
+- [ ] Nested searches built on top of the saved-search tree. 
+    - Basically, if someone looks for "WordPress" and then "plugins", they will see one tree node for "WordPress" and the other for "plugins" that's inside WordPress. So if they click into that, they will see results that have both "WordPress" and "plugins" in them.
 - [ ] Title editing for items on the list. (Not sure how actually useful that would be.)
+- [ ] Piles.
+    - Basically temporary sub-lists that can be created by the user. The idea is that whenever someone's working on a new idea/research/project, they would create a reading pile for that project only.
+    - The pile gets automatically deleted when there are no more unread items in it.
+- [ ] Dead-link recovery helpers
+    - If URL validation says `problem`, offer “search title on web”, “open Wayback”, or “view domain homepage”. Large archives always contain rot.
 
 ## Known Issues / Tech Debt
 
-- URL validation is a browser-side iframe workaround, so it can only classify links as `valid` or `problem` and will never be fully reliable; building a more reliable method that actually detects everything correctly has proven hard since calls from user browsers like that to get HTTP headers are usually blocked - the iframe method was used as a workaround; alternatively we could use some external API for the checks but that would send the list to a 3rd party service
 - The app is now persistent, but still single-user and intentionally simple - there is no account system, no sync layer, and no multi-user support
 - The nominal 50MB upload limit exists in code, but the README explicitly notes that real-world limits have not been verified yet
 - Large-list behavior above roughly 50k items is still an open performance question
 - `DataDisplay.tsx` is now split into smaller UI modules under `src/components/data-display/`, but it still owns the central state and workflow logic for the library screen
+- Shelves and shelf filters were added, but `DataDisplay.tsx` still owns the combined list, shelf, and filter orchestration
 - Manual title fetching for added links is now best-effort server-side, and many sites will still block or degrade fetches
 - Docker is the recommended distribution path; Bun-only setup works well for developers but is less familiar for some users
 - Getting reliable titles for Twitter articles - not standard tweets - still doesn't work.
 
 ## Decisions Pending
 
-- Should URL validation remain a browser-only heuristic, or should the project eventually move to a stronger server-side checker? Like for instance making actual http requests - likely yes.
 - Is in-memory rendering/filtering sufficient for the target dataset sizes, or do we need heavier performance work such as virtualization or off-main-thread processing?
+- Should removing a domain rule from a shelf also remove previously backfilled shelf memberships, or should it only stop future automatic additions?
 - If saved searches are added, what is the canonical data model for the search tree and nested-query behavior?
 - Should OpenShelf stay a strictly self-hosted single-user tool, or eventually grow an optional sync or sharing story?
 - Should we display the archived timestamp anywhere or use it in any other way?
