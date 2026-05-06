@@ -9,11 +9,7 @@ import {
   type ItemStatus,
   type UpdateItemInput,
 } from '../db'
-
-function normalizeUrl(rawUrl: string) {
-  const candidate = /^https?:\/\//i.test(rawUrl) ? rawUrl : `https://${rawUrl}`
-  return new URL(candidate).toString()
-}
+import { normalizeUrl } from '../url'
 
 const TWITTER_TITLE_MAX_LENGTH = 70
 const REDDIT_REQUEST_USER_AGENT = 'OpenShelf/0.50 (+self-hosted read-later app)'

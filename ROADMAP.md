@@ -64,11 +64,25 @@ Versions prior to v0.30 considered legacy.
     - Shelf selection should be added to the filters menu, below "Platforms".
 
 ### v0.80 - Better welcome features
-- [ ] URL normalization during import.
-    - Right now, manual link adding normalizes URLs, but CSV import does not.
-    - That means `https://site.com/x`, `https://site.com/x/`, and tracking-param variants can slip through as separate items.
-- [ ] Imports from popular read later apps
+- [x] URL normalization during import.
+    - CSV import now uses the same basic URL normalization as manual link adding before dedupe/import.
+    - This does not remove tracking parameters or resolve redirect-equivalent URLs.
+- [x] Scaffolding for multiple import sources.
     - Right now we only handle imports from Pocket, we need more: Matter, Readwise, Raindrop, Instapaper.
+    - This step is only meant to start doing required UI changes to handle multiple different import types vs what we have now. 
+    - Move imports to a separate pop-up - similar to how "manage shelves" works, instead of having the import panel appear in the main app.
+- [x] Import logic for Instapaper.
+    - Make it possible to import from Instapaper.
+    - Use the existing scaffolding UI for this.
+- [ ] Import logic for Matter.
+    - Make it possible to import from Matter.
+    - Use the existing scaffolding UI for this.
+- [ ] Import logic for Readwise.
+    - Make it possible to import from Readwise.
+    - Use the existing scaffolding UI for this.
+- [ ] Import logic for Raindrop.
+    - Make it possible to import from Raindrop.
+    - Use the existing scaffolding UI for this.
 - [ ] A stronger server-side checker for URL validation (the "check URLs" feature)
     - URL validation is a browser-side iframe workaround, so it can only classify links as `valid` or `problem` and will never be fully reliable. Building a more reliable method that actually detects everything correctly has proven hard on the previous serverless setup that this app was on (pre pivot) since calls from user browsers like that to get HTTP headers are usually blocked - the iframe method was used as a workaround.
 

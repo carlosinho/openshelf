@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
-import { FileUpload } from './components/FileUpload'
 import { DataDisplay } from './components/DataDisplay'
 import { Navbar } from './components/Navbar'
 import { KarolBadge } from './components/KarolBadge'
 import { KarolFooter } from './components/KarolFooter'
 import { LoginForm } from './components/LoginForm'
+import { ImportDialog } from './components/data-display/ImportDialog'
 import { PocketItem, Shelf } from './types/pocket'
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './components/ui/accordion'
-import { Database, Download, ShieldCheck } from 'lucide-react'
+import { Database, Download, ShieldCheck, Upload } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { ApiError, checkAuth, fetchItems, fetchShelves, login, logout } from './lib/api'
 
@@ -17,6 +17,7 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
 
   const handleDataParsed = (items: PocketItem[]) => {
     setData(items)
@@ -125,16 +126,19 @@ function App() {
                 Get Started
               </h2>
               <p className="text-muted-foreground mb-6">
-                Import one or more Pocket CSV export files to create your persistent library.
+                Start your library by importing links from Pocket today. Other read-later app
+                importers are staged in the import dialog and marked as coming soon.
               </p>
 
               <div className="flex flex-wrap items-center gap-3 mb-6">
+                <Button onClick={() => setIsImportDialogOpen(true)} className="gap-2">
+                  <Upload className="size-4" />
+                  Import links
+                </Button>
                 <Button variant="outline" onClick={handleLogout}>
                   Log out
                 </Button>
               </div>
-
-              <FileUpload onImportComplete={refetchLibrary} />
             </div>
           ) : (
             <div className="space-y-6">
@@ -165,9 +169,18 @@ function App() {
           </div>
         </div>
       )}
+
+      {isAuthenticated && !hasLibraryContent && isImportDialogOpen ? (
+        <ImportDialog
+          onClose={() => setIsImportDialogOpen(false)}
+          onImportComplete={async () => {
+            await refetchLibrary()
+          }}
+        />
+      ) : null}
       
       {/* Footer */}
-      <KarolFooter version="ver 0.73" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
+      <KarolFooter version="ver 0.81" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
       
       {/* Karol Badge - floating face 
       <KarolBadge />*/}

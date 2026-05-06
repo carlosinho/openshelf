@@ -29,7 +29,7 @@ export function DataDisplayImportSummary({
               size={16}
               aria-hidden="true"
             />
-            CSV import finished.
+            Import finished.
           </div>
           <div className="mt-1 ml-7 text-xs text-green-700">
             Added {importSummary.imported} new item

@@ -13,7 +13,7 @@ interface DataDisplayHeaderActionsProps {
   onToggleActionsOpen: () => void
   onExportAll: () => void
   onExportFiltered: () => void
-  onToggleImportCsv: () => void
+  onOpenImportDialog: () => void
   onStartValidation: () => void
   onCancelValidation: () => void
   onClearArchived: () => void
@@ -31,7 +31,7 @@ export function DataDisplayHeaderActions({
   onToggleActionsOpen,
   onExportAll,
   onExportFiltered,
-  onToggleImportCsv,
+  onOpenImportDialog,
   onStartValidation,
   onCancelValidation,
   onClearArchived,
@@ -78,11 +78,11 @@ export function DataDisplayHeaderActions({
             <Button
               variant="ghost"
               size="sm"
-              onClick={onToggleImportCsv}
+              onClick={onOpenImportDialog}
               className="w-full justify-start gap-2"
             >
               <Upload className="size-4 opacity-60" aria-hidden="true" />
-              Import CSV
+              Import links
             </Button>
             <Button
               variant="ghost"

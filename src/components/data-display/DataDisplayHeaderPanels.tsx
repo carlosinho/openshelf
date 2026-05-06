@@ -1,24 +1,14 @@
 import type { Ref } from 'react'
 import { AlertTriangle } from 'lucide-react'
-import { FileUpload } from '../FileUpload'
 import { Button } from '../ui/button'
-
-interface ImportResultSummary {
-  imported: number
-  duplicates: number
-  errors: string[]
-}
 
 interface DataDisplayHeaderPanelsProps {
   id: string
-  isImportingCsv: boolean
   isAddingLink: boolean
   newUrl: string
   addError: string | null
   isAddingLoading: boolean
   addLinkInputRef: Ref<HTMLInputElement>
-  onRefresh?: () => Promise<void> | void
-  onImportResult: (result: ImportResultSummary) => void
   onNewUrlChange: (value: string) => void
   onSubmitAddLink: () => void
   onCancelAddLink: () => void
@@ -26,30 +16,17 @@ interface DataDisplayHeaderPanelsProps {
 
 export function DataDisplayHeaderPanels({
   id,
-  isImportingCsv,
   isAddingLink,
   newUrl,
   addError,
   isAddingLoading,
   addLinkInputRef,
-  onRefresh,
-  onImportResult,
   onNewUrlChange,
   onSubmitAddLink,
   onCancelAddLink,
 }: DataDisplayHeaderPanelsProps) {
   return (
     <div className="space-y-3">
-      {isImportingCsv && (
-        <FileUpload
-          className="w-full"
-          onImportComplete={async () => {
-            await onRefresh?.()
-          }}
-          onImportResult={onImportResult}
-        />
-      )}
-
       {isAddingLink && (
         <div className="w-full space-y-2 rounded-md border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <form

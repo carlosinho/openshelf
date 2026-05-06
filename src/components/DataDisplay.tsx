@@ -31,6 +31,7 @@ import { DataDisplayHeaderActions } from './data-display/DataDisplayHeaderAction
 import { DataDisplayHeaderPanels } from './data-display/DataDisplayHeaderPanels'
 import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeaderStatusFilters'
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
+import { ImportDialog } from './data-display/ImportDialog'
 import { DataDisplayListControls } from './data-display/DataDisplayListControls'
 import { DataDisplayPagination } from './data-display/DataDisplayPagination'
 import { ShelfAssignmentDialog } from './data-display/ShelfAssignmentDialog'
@@ -38,6 +39,7 @@ import { ShelfManagerDialog } from './data-display/ShelfManagerDialog'
 import { DataDisplayTable } from './data-display/DataDisplayTable'
 import { DataDisplayValidationStatus } from './data-display/DataDisplayValidationStatus'
 import { isHomepage } from './data-display/isHomepage'
+import type { ImportResult } from '../types/import'
 
 interface DataDisplayProps {
   data: PocketItem[]
@@ -79,7 +81,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     duplicates: number
     errors: number
   } | null>(null)
-  const [isImportingCsv, setIsImportingCsv] = useState(false)
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
   const [isAddingLink, setIsAddingLink] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
@@ -193,11 +195,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     }
   }
 
-  const handleImportResult = (result: {
-    imported: number
-    duplicates: number
-    errors: string[]
-  }) => {
+  const handleImportResult = (result: ImportResult) => {
     setImportSummary({
       imported: result.imported,
       duplicates: result.duplicates,
@@ -205,7 +203,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     })
 
     if (result.imported > 0 || result.duplicates > 0) {
-      setIsImportingCsv(false)
+      setIsImportDialogOpen(false)
     }
   }
 
@@ -698,8 +696,8 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     })
   }
 
-  const handleToggleImportCsv = () => {
-    setIsImportingCsv((prev) => !prev)
+  const handleOpenImportDialog = () => {
+    setIsImportDialogOpen(true)
     setImportSummary(null)
     setIsActionsOpen(false)
   }
@@ -766,7 +764,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
               handleExportFiltered()
               setIsActionsOpen(false)
             }}
-            onToggleImportCsv={handleToggleImportCsv}
+            onOpenImportDialog={handleOpenImportDialog}
             onOpenShelfManager={() => {
               setIsShelfManagerOpen(true)
               setIsActionsOpen(false)
@@ -792,14 +790,11 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         createPortal(
           <DataDisplayHeaderPanels
             id={id}
-            isImportingCsv={isImportingCsv}
             isAddingLink={isAddingLink}
             newUrl={newUrl}
             addError={addError}
             isAddingLoading={isAddingLoading}
             addLinkInputRef={addLinkInputRef}
-            onRefresh={onRefresh}
-            onImportResult={handleImportResult}
             onNewUrlChange={handleNewUrlChange}
             onSubmitAddLink={() => {
               void handleAddLink()
@@ -815,6 +810,16 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
           onDismiss={() => setImportSummary(null)}
         />
       )}
+
+      {isImportDialogOpen ? (
+        <ImportDialog
+          onClose={() => setIsImportDialogOpen(false)}
+          onImportComplete={async () => {
+            await onRefresh?.()
+          }}
+          onImportResult={handleImportResult}
+        />
+      ) : null}
 
       <DataDisplayFilters
         id={id}

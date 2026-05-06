@@ -45,7 +45,7 @@ Absent by design right now:
 - The main list view defaults to unread-only. Two header checkboxes control status selection: unread, archive, both, or neither.
 - Status selection is treated as the current list scope rather than as a counted filter badge inside the filter drawer.
 - The built-in CSV upload UI is shown on first run and remains available from the main library view for later merge imports.
-- Manual add normalizes URLs before dedupe checks. CSV import validates URLs but does not normalize them first.
+- Manual add and CSV import both normalize URLs before dedupe checks.
 - The shared `PocketItem` type defines validation states `pending`, `checking`, `valid`, and `problem`, but the current implementation only persists final `valid` or `problem` values.
 
 ## Shared Domain Model
@@ -148,8 +148,8 @@ Important exception: the signing secret is generated in memory at startup with `
 1. The empty-library screen renders `FileUpload`, and the main library view can reopen the same import UI later.
 2. `useFileUpload` enforces `.csv`, maximum `10` files, and a nominal `50MB` per-file limit in the browser.
 3. The browser sends multipart form data to `POST /api/import` under the field name `files`.
-4. The server parses each file with Papa Parse, lowercases headers, validates required columns, and validates rows.
-5. Multi-file imports are combined. Duplicate URLs within the upload batch are removed before DB insertion.
+4. The server parses each file with Papa Parse, lowercases headers, validates source-specific required columns, normalizes URLs, and validates rows.
+5. Multi-file imports are combined. Duplicate normalized URLs within the upload batch are removed before DB insertion.
 6. `importItems()` inserts rows with `INSERT OR IGNORE`, so duplicates already in SQLite are skipped at the database layer too.
 7. The response reports `imported`, `duplicates`, and `errors`.
 8. The frontend refetches the full library.
@@ -230,7 +230,7 @@ Important exception: persistence happens only after the full run resolves. If va
 - `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
 - `server/routes/import.ts`: import/export/backup
 - `server/db.ts`: schema plus direct query helpers
-- `server/csv.ts`: CSV parsing, validation, dedupe, and export helpers
+- `server/csv.ts`: source-specific CSV parsing, validation, dedupe, and export helpers
 
 ### Route Groups
 
@@ -274,7 +274,7 @@ Security boundary:
 ## Failure Handling And Edge Cases
 
 - Import is partial-success by design: valid rows import, invalid rows are reported, duplicates are skipped.
-- Batch dedupe uses exact URL strings. It is not a semantic URL canonicalizer.
+- Batch dedupe uses exact normalized URL strings. It is not a semantic URL canonicalizer.
 - Domain shelf rules use root-domain matching via `tldts`, so subdomains like `www.example.com` and `blog.example.com` resolve to the same shelf rule target.
 - Manual add rejects invalid URLs and exact duplicates with explicit errors.
 - Manual add title fetching is best-effort and swallowed on failure; fallback title is the normalized URL.

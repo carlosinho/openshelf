@@ -1,11 +1,23 @@
 import { Hono } from 'hono'
-import { combineCSVResults, exportPocketCSV, parsePocketCSVText } from '../csv'
+import { combineCSVResults, exportPocketCSV, parseImportCSVText, type ImportSource } from '../csv'
 import { createDatabaseBackup, getAllItems, importItems } from '../db'
 
 export const importRoutes = new Hono()
 
 importRoutes.post('/import', async (c) => {
   const formData = await c.req.formData()
+  const sourceValue = formData.get('source')
+  const source: ImportSource | null =
+    sourceValue === null
+      ? 'pocket'
+      : sourceValue === 'instapaper' || sourceValue === 'pocket'
+        ? sourceValue
+        : null
+
+  if (!source) {
+    return c.json({ error: 'Unsupported import source.' }, 400)
+  }
+
   const files = formData
     .getAll('files')
     .filter((value): value is File => value instanceof File)
@@ -15,7 +27,7 @@ importRoutes.post('/import', async (c) => {
   }
 
   const parsedResults = await Promise.all(
-    files.map(async (file) => parsePocketCSVText(await file.text(), file.name))
+    files.map(async (file) => parseImportCSVText(await file.text(), file.name, source))
   )
 
   const combined = parsedResults.length === 1 ? parsedResults[0] : combineCSVResults(parsedResults)

@@ -1,4 +1,5 @@
 import type { PocketItem, Shelf } from '../types/pocket'
+import type { ImportSource } from '../types/import'
 
 export class ApiError extends Error {
   status: number
@@ -109,8 +110,10 @@ export async function patchItem(
   })
 }
 
-export async function importFiles(files: File[]) {
+export async function importFiles(files: File[], source: ImportSource = 'pocket') {
   const formData = new FormData()
+
+  formData.append('source', source)
 
   files.forEach((file) => {
     formData.append('files', file, file.name)
