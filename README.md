@@ -10,7 +10,7 @@
       <br /><br />
       It is a single-user read-later manager built for people who want full control over their reading queue. 
       <br /><br />
-      OpenShelf runs as a private web app, stores everything in a SQLite database, and gives you a simple workflow for adding links, organizing them into thematic shelves, filtering, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups. It can also import compatible CSV exports, including old Pocket and Instapaper exports, if you already have a link archive you want to bring with you.
+      OpenShelf runs as a private web app, stores everything in a SQLite database, and gives you a simple workflow for adding links, organizing them into thematic shelves, filtering, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups. It can also import compatible CSV reading lists from other tools if you already have an archive you want to bring with you.
     </td>
   </tr>
 </table>
@@ -36,6 +36,7 @@ It is a good fit if you:
 - Prefer self-hosted tools.
 - Want your reading queue stored in SQLite.
 - Want a simple unread/archive workflow.
+- Want to bring in your existing library from Pocket, Instapaper, or Matter.
 - Want CSV export and raw database backups.
 - Want to clean up a large backlog of saved links.
 - Are comfortable running a small Dockerized web app.
@@ -87,7 +88,7 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 2. The app loads all items from `/api/items`.
 3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, delete, and organize with shelves from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
 4. Optionally create shelves such as `work`, `funny`, or `important`, add individual links to them, or attach an entire root domain so current and future links from that domain land on the same shelf automatically.
-5. Optionally import more Pocket or Instapaper CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
+5. Optionally import more Pocket, Instapaper, or Matter CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
 
 ### Export And Backup
 

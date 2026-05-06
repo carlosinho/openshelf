@@ -1,4 +1,4 @@
-export type ImportSource = 'pocket' | 'instapaper'
+export type ImportSource = 'pocket' | 'instapaper' | 'matter'
 
 export type ImportResult = {
   ok: true

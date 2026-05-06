@@ -74,7 +74,7 @@ Versions prior to v0.30 considered legacy.
 - [x] Import logic for Instapaper.
     - Make it possible to import from Instapaper.
     - Use the existing scaffolding UI for this.
-- [ ] Import logic for Matter.
+- [x] Import logic for Matter.
     - Make it possible to import from Matter.
     - Use the existing scaffolding UI for this.
 - [ ] Import logic for Readwise.

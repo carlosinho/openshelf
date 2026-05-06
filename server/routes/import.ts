@@ -10,7 +10,7 @@ importRoutes.post('/import', async (c) => {
   const source: ImportSource | null =
     sourceValue === null
       ? 'pocket'
-      : sourceValue === 'instapaper' || sourceValue === 'pocket'
+      : sourceValue === 'instapaper' || sourceValue === 'matter' || sourceValue === 'pocket'
         ? sourceValue
         : null
 

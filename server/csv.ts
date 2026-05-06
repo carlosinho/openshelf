@@ -2,7 +2,7 @@ import Papa from 'papaparse'
 import type { ImportItemInput } from './db'
 import { normalizeUrl } from './url'
 
-export type ImportSource = 'pocket' | 'instapaper'
+export type ImportSource = 'pocket' | 'instapaper' | 'matter'
 
 export interface ParsedCsvResult {
   data: ImportItemInput[]
@@ -12,6 +12,20 @@ export interface ParsedCsvResult {
 
 export const REQUIRED_HEADERS = ['title', 'url', 'time_added', 'tags', 'status']
 const INSTAPAPER_REQUIRED_HEADERS = ['url', 'title', 'folder', 'timestamp', 'tags']
+const MATTER_REQUIRED_HEADERS = [
+  'title',
+  'author',
+  'publisher',
+  'url',
+  'tags',
+  'word count',
+  'in queue',
+  'favorited',
+  'read',
+  'highlight count',
+  'last interaction date',
+  'file id',
+]
 export const VALID_STATUSES = ['archive', 'unread'] as const
 
 function validateCSVFormat(headers: string[], requiredHeaders: string[]): string[] {
@@ -34,6 +48,10 @@ export function validatePocketCSVFormat(headers: string[]): string[] {
 
 export function validateInstapaperCSVFormat(headers: string[]): string[] {
   return validateCSVFormat(headers, INSTAPAPER_REQUIRED_HEADERS)
+}
+
+export function validateMatterCSVFormat(headers: string[]): string[] {
+  return validateCSVFormat(headers, MATTER_REQUIRED_HEADERS)
 }
 
 export function validatePocketItem(
@@ -177,6 +195,97 @@ export function validateInstapaperItem(
   }
 }
 
+function parseMatterBoolean(rawValue: string | undefined): boolean | null {
+  const normalizedValue = rawValue?.trim().toLowerCase()
+
+  if (normalizedValue === 'true') {
+    return true
+  }
+
+  if (normalizedValue === 'false') {
+    return false
+  }
+
+  return null
+}
+
+function parseMatterTimestamp(rawValue: string | undefined, fallbackTimestamp: number): number | null {
+  const value = rawValue?.trim()
+
+  if (!value) {
+    return fallbackTimestamp
+  }
+
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/)
+
+  if (!match) {
+    return null
+  }
+
+  const [, year, month, day, hour, minute, second] = match
+  const timestamp = Math.floor(
+    Date.UTC(
+      Number(year),
+      Number(month) - 1,
+      Number(day),
+      Number(hour),
+      Number(minute),
+      Number(second)
+    ) / 1000
+  )
+
+  return Number.isNaN(timestamp) || timestamp <= 0 ? null : timestamp
+}
+
+export function validateMatterItem(
+  row: Record<string, string>,
+  rowIndex: number,
+  fallbackTimestamp: number
+): { item?: ImportItemInput; errors: string[] } {
+  const errors: string[] = []
+
+  if (!row.title || row.title.trim() === '') {
+    errors.push(`Row ${rowIndex + 1}: Title is required`)
+  }
+
+  let normalizedUrl = ''
+
+  if (!row.url || row.url.trim() === '') {
+    errors.push(`Row ${rowIndex + 1}: URL is required`)
+  } else {
+    try {
+      normalizedUrl = normalizeUrl(row.url.trim())
+    } catch {
+      errors.push(`Row ${rowIndex + 1}: Invalid URL format`)
+    }
+  }
+
+  const read = parseMatterBoolean(row.read)
+  if (read === null) {
+    errors.push(`Row ${rowIndex + 1}: Read must be 'True' or 'False'`)
+  }
+
+  const timestamp = parseMatterTimestamp(row['last interaction date'], fallbackTimestamp)
+  if (timestamp === null) {
+    errors.push(`Row ${rowIndex + 1}: Invalid Last Interaction Date`)
+  }
+
+  if (errors.length > 0 || read === null || timestamp === null) {
+    return { errors }
+  }
+
+  return {
+    item: {
+      title: row.title.trim(),
+      url: normalizedUrl,
+      time_added: timestamp,
+      tags: row.tags ? row.tags.trim() : '',
+      status: read ? 'archive' : 'unread',
+    },
+    errors: [],
+  }
+}
+
 export function parsePocketCSVText(csvText: string, fileName: string): ParsedCsvResult {
   const parseResult = Papa.parse<Record<string, string>>(csvText, {
     header: true,
@@ -273,6 +382,56 @@ export function parseInstapaperCSVText(csvText: string, fileName: string): Parse
   }
 }
 
+export function parseMatterCSVText(csvText: string, fileName: string): ParsedCsvResult {
+  const parseResult = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header) => header.toLowerCase().trim(),
+  })
+
+  const errors: string[] = []
+  const data: ImportItemInput[] = []
+
+  if (parseResult.meta.fields) {
+    const formatErrors = validateMatterCSVFormat(parseResult.meta.fields)
+    errors.push(...formatErrors)
+
+    if (formatErrors.length > 0) {
+      return {
+        data: [],
+        errors,
+        fileName,
+      }
+    }
+  }
+
+  const fallbackBaseTimestamp = Math.floor(Date.now() / 1000)
+
+  parseResult.data.forEach((row, index) => {
+    const { item, errors: rowErrors } = validateMatterItem(row, index, fallbackBaseTimestamp - index)
+
+    if (item) {
+      data.push(item)
+    }
+
+    errors.push(...rowErrors)
+  })
+
+  if (parseResult.errors.length > 0) {
+    errors.push(
+      ...parseResult.errors.map((error) =>
+        `Parsing error: ${error.message}${error.row !== undefined ? ` (row ${error.row + 1})` : ''}`
+      )
+    )
+  }
+
+  return {
+    data,
+    errors,
+    fileName,
+  }
+}
+
 export function parseImportCSVText(
   csvText: string,
   fileName: string,
@@ -280,6 +439,10 @@ export function parseImportCSVText(
 ): ParsedCsvResult {
   if (source === 'instapaper') {
     return parseInstapaperCSVText(csvText, fileName)
+  }
+
+  if (source === 'matter') {
+    return parseMatterCSVText(csvText, fileName)
   }
 
   return parsePocketCSVText(csvText, fileName)

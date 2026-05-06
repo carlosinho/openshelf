@@ -180,7 +180,7 @@ function App() {
       ) : null}
       
       {/* Footer */}
-      <KarolFooter version="ver 0.81" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
+      <KarolFooter version="ver 0.82" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
       
       {/* Karol Badge - floating face 
       <KarolBadge />*/}

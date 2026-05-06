@@ -5,7 +5,7 @@ import type { ImportResult, ImportSource } from '../../types/import'
 import { Button } from '../ui/button'
 import { ShelfModal } from './ShelfModal'
 
-type ImportProviderId = ImportSource | 'matter' | 'readwise' | 'raindrop'
+type ImportProviderId = ImportSource | 'readwise' | 'raindrop'
 
 interface ImportProvider {
   id: ImportProviderId
@@ -13,6 +13,8 @@ interface ImportProvider {
   description: string
   available: boolean
   source?: ImportSource
+  uploadHint?: string
+  fileDescription?: string
 }
 
 interface ImportDialogProps {
@@ -39,8 +41,11 @@ const IMPORT_PROVIDERS: ImportProvider[] = [
   {
     id: 'matter',
     name: 'Matter',
-    description: 'Coming soon.',
-    available: false,
+    description: 'Import the Matter history CSV export.',
+    available: true,
+    source: 'matter',
+    uploadHint: 'Upload the Matter export named _matter_history.csv.',
+    fileDescription: 'Matter _matter_history.csv file',
   },
   {
     id: 'readwise',
@@ -123,15 +128,16 @@ export function ImportDialog({
                 {selectedProvider.name}
               </div>
               <p className="text-sm text-muted-foreground">
-                Upload CSV exports from {selectedProvider.name}. Valid rows import even if some
-                rows are skipped with errors.
+                {selectedProvider.uploadHint ??
+                  `Upload CSV exports from ${selectedProvider.name}.`} Valid rows import even if
+                some rows are skipped with errors.
               </p>
             </div>
             <FileUpload
               onImportComplete={onImportComplete}
               onImportResult={onImportResult}
               title={`Drop your ${selectedProvider.name} files here`}
-              description={`${selectedProvider.name} export files (max. 50MB each)`}
+              description={`${selectedProvider.fileDescription ?? `${selectedProvider.name} export files`} (max. 50MB each)`}
               inputAriaLabel={`Upload ${selectedProvider.name} files`}
               failureMessage={`Failed to import ${selectedProvider.name} files.`}
               importSource={selectedProvider.source}
