@@ -2,7 +2,7 @@ import Papa from 'papaparse'
 import type { ImportItemInput } from './db'
 import { normalizeUrl } from './url'
 
-export type ImportSource = 'pocket' | 'instapaper' | 'matter'
+export type ImportSource = 'pocket' | 'instapaper' | 'matter' | 'raindrop'
 
 export interface ParsedCsvResult {
   data: ImportItemInput[]
@@ -25,6 +25,18 @@ const MATTER_REQUIRED_HEADERS = [
   'highlight count',
   'last interaction date',
   'file id',
+]
+const RAINDROP_REQUIRED_HEADERS = [
+  'id',
+  'title',
+  'note',
+  'excerpt',
+  'url',
+  'tags',
+  'created',
+  'cover',
+  'highlights',
+  'favorite',
 ]
 export const VALID_STATUSES = ['archive', 'unread'] as const
 
@@ -52,6 +64,10 @@ export function validateInstapaperCSVFormat(headers: string[]): string[] {
 
 export function validateMatterCSVFormat(headers: string[]): string[] {
   return validateCSVFormat(headers, MATTER_REQUIRED_HEADERS)
+}
+
+export function validateRaindropCSVFormat(headers: string[]): string[] {
+  return validateCSVFormat(headers, RAINDROP_REQUIRED_HEADERS)
 }
 
 export function validatePocketItem(
@@ -286,6 +302,61 @@ export function validateMatterItem(
   }
 }
 
+function parseRaindropTimestamp(rawValue: string | undefined): number | null {
+  const value = rawValue?.trim()
+
+  if (!value) {
+    return null
+  }
+
+  const timestamp = Math.floor(Date.parse(value) / 1000)
+
+  return Number.isNaN(timestamp) || timestamp <= 0 ? null : timestamp
+}
+
+export function validateRaindropItem(
+  row: Record<string, string>,
+  rowIndex: number
+): { item?: ImportItemInput; errors: string[] } {
+  const errors: string[] = []
+
+  if (!row.title || row.title.trim() === '') {
+    errors.push(`Row ${rowIndex + 1}: Title is required`)
+  }
+
+  let normalizedUrl = ''
+
+  if (!row.url || row.url.trim() === '') {
+    errors.push(`Row ${rowIndex + 1}: URL is required`)
+  } else {
+    try {
+      normalizedUrl = normalizeUrl(row.url.trim())
+    } catch {
+      errors.push(`Row ${rowIndex + 1}: Invalid URL format`)
+    }
+  }
+
+  const timestamp = parseRaindropTimestamp(row.created)
+  if (timestamp === null) {
+    errors.push(`Row ${rowIndex + 1}: Invalid Created timestamp`)
+  }
+
+  if (errors.length > 0 || timestamp === null) {
+    return { errors }
+  }
+
+  return {
+    item: {
+      title: row.title.trim(),
+      url: normalizedUrl,
+      time_added: timestamp,
+      tags: row.tags ? row.tags.trim() : '',
+      status: 'unread',
+    },
+    errors: [],
+  }
+}
+
 export function parsePocketCSVText(csvText: string, fileName: string): ParsedCsvResult {
   const parseResult = Papa.parse<Record<string, string>>(csvText, {
     header: true,
@@ -432,6 +503,54 @@ export function parseMatterCSVText(csvText: string, fileName: string): ParsedCsv
   }
 }
 
+export function parseRaindropCSVText(csvText: string, fileName: string): ParsedCsvResult {
+  const parseResult = Papa.parse<Record<string, string>>(csvText, {
+    header: true,
+    skipEmptyLines: true,
+    transformHeader: (header) => header.toLowerCase().trim(),
+  })
+
+  const errors: string[] = []
+  const data: ImportItemInput[] = []
+
+  if (parseResult.meta.fields) {
+    const formatErrors = validateRaindropCSVFormat(parseResult.meta.fields)
+    errors.push(...formatErrors)
+
+    if (formatErrors.length > 0) {
+      return {
+        data: [],
+        errors,
+        fileName,
+      }
+    }
+  }
+
+  parseResult.data.forEach((row, index) => {
+    const { item, errors: rowErrors } = validateRaindropItem(row, index)
+
+    if (item) {
+      data.push(item)
+    }
+
+    errors.push(...rowErrors)
+  })
+
+  if (parseResult.errors.length > 0) {
+    errors.push(
+      ...parseResult.errors.map((error) =>
+        `Parsing error: ${error.message}${error.row !== undefined ? ` (row ${error.row + 1})` : ''}`
+      )
+    )
+  }
+
+  return {
+    data,
+    errors,
+    fileName,
+  }
+}
+
 export function parseImportCSVText(
   csvText: string,
   fileName: string,
@@ -443,6 +562,10 @@ export function parseImportCSVText(
 
   if (source === 'matter') {
     return parseMatterCSVText(csvText, fileName)
+  }
+
+  if (source === 'raindrop') {
+    return parseRaindropCSVText(csvText, fileName)
   }
 
   return parsePocketCSVText(csvText, fileName)

@@ -5,7 +5,7 @@ import type { ImportResult, ImportSource } from '../../types/import'
 import { Button } from '../ui/button'
 import { ShelfModal } from './ShelfModal'
 
-type ImportProviderId = ImportSource | 'readwise' | 'raindrop'
+type ImportProviderId = ImportSource
 
 interface ImportProvider {
   id: ImportProviderId
@@ -48,16 +48,13 @@ const IMPORT_PROVIDERS: ImportProvider[] = [
     fileDescription: 'Matter _matter_history.csv file',
   },
   {
-    id: 'readwise',
-    name: 'Readwise',
-    description: 'Coming soon.',
-    available: false,
-  },
-  {
     id: 'raindrop',
     name: 'Raindrop',
-    description: 'Coming soon.',
-    available: false,
+    description: 'Import Raindrop CSV export files.',
+    available: true,
+    source: 'raindrop',
+    uploadHint: 'Upload CSV exports from Raindrop.',
+    fileDescription: 'Raindrop CSV export files',
   },
 ]
 

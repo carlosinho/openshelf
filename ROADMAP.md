@@ -7,6 +7,7 @@
 - v0.50 - new branding
 - v0.60 - code refactor
 - v0.70 - read/archived controls, mobile improvements, shelves
+- v0.80 - better imports and welcome features
 
 > OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, shelves, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
 
@@ -63,12 +64,12 @@ Versions prior to v0.30 considered legacy.
     - Adding to shelf should also be possible when selecting multiple items from the list - from that selection box that appears which now lets the user to export, archive, delete.
     - Shelf selection should be added to the filters menu, below "Platforms".
 
-### v0.80 - Better welcome features
+### v0.80 - Better imports and welcome features
 - [x] URL normalization during import.
     - CSV import now uses the same basic URL normalization as manual link adding before dedupe/import.
     - This does not remove tracking parameters or resolve redirect-equivalent URLs.
 - [x] Scaffolding for multiple import sources.
-    - Right now we only handle imports from Pocket, we need more: Matter, Readwise, Raindrop, Instapaper.
+    - Right now we only handle imports from Pocket, we need more: Matter, Raindrop, Instapaper.
     - This step is only meant to start doing required UI changes to handle multiple different import types vs what we have now. 
     - Move imports to a separate pop-up - similar to how "manage shelves" works, instead of having the import panel appear in the main app.
 - [x] Import logic for Instapaper.
@@ -77,10 +78,7 @@ Versions prior to v0.30 considered legacy.
 - [x] Import logic for Matter.
     - Make it possible to import from Matter.
     - Use the existing scaffolding UI for this.
-- [ ] Import logic for Readwise.
-    - Make it possible to import from Readwise.
-    - Use the existing scaffolding UI for this.
-- [ ] Import logic for Raindrop.
+- [x] Import logic for Raindrop.
     - Make it possible to import from Raindrop.
     - Use the existing scaffolding UI for this.
 - [ ] A stronger server-side checker for URL validation (the "check URLs" feature)

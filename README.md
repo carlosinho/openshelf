@@ -19,7 +19,7 @@
   <img src="public/OpenShelf-scrn.png" alt="OpenShelf app screenshot" width="900" />
 </p>
 
-## Why It Exists
+## Why it exists
 
 OpenShelf exists because read-later links deserve a better home than browser bookmark chaos, endless open tabs, or another hosted tool like Pocket (RIP).
 
@@ -27,7 +27,19 @@ It is intentionally small: one operator, private reading queue, one SQLite datab
 
 It is not a hosted sync service, social bookmarking platform, team knowledge base, or generic bookmark database. It is a local-first read-later link manager you can run yourself.
 
-## Who OpenShelf Is For
+## What you can do with OpenShelf
+
+- Run a private read-later library as a small self-hosted web app.
+- Store the library in `data/openshelf.db`.
+- Add links manually.
+- Archive, unarchive, delete links.
+- Import compatible CSV files.
+- Organize links into shelves.
+- Filter, search, sort, archive, unarchive, and delete links.
+- Export all items, filtered views, or selected rows to CSV.
+- Download a raw SQLite backup.
+
+## Who OpenShelf is for
 
 OpenShelf is for people who want a private, self-hosted place to manage links they intend to read later.
 
@@ -36,12 +48,12 @@ It is a good fit if you:
 - Prefer self-hosted tools.
 - Want your reading queue stored in SQLite.
 - Want a simple unread/archive workflow.
-- Want to bring in your existing library from Pocket, Instapaper, or Matter.
+- Want to bring in your existing library from Pocket, Instapaper, Matter, or Raindrop.
 - Want CSV export and raw database backups.
 - Want to clean up a large backlog of saved links.
 - Are comfortable running a small Dockerized web app.
 
-## Not For / Not Yet
+## Not for / not yet
 
 OpenShelf is intentionally simple today.
 
@@ -59,21 +71,13 @@ It does not currently provide:
 
 If you want one private read-later queue that you run yourself, OpenShelf should fit. If you want a polished hosted platform with sync and native apps, it probably is not the right tool yet.
 
-## What Exists Now
+## Security?
 
-- Add links manually.
-- Import compatible CSV link archives for initial setup or later merges.
-- Persist links in `data/openshelf.db`.
-- Protect the instance with one password and signed session cookies.
-- Create thematic shelves, rename them, delete them without deleting links, and add links or whole domains to them.
-- Browse the full library with unread/archive status selection, search, platform filters, shelf filters, date filters, homepage-only filtering, sorting, pagination, and row selection.
-- Archive, unarchive, bulk delete, or clear archived items.
-- Add selected rows to shelves from the bulk actions bar.
-- Export all items, filtered views, or selected rows to CSV.
-- Download a raw SQLite backup.
-- Run browser-side URL checks against the current filtered unread set.
+- OpenShelf is designed for a trusted single-user instance.
+- Anyone with the instance password can access the full library and backup.
+- Use HTTPS if exposing it outside your local network.
 
-## Main User Flows
+## Main user flows
 
 ### First Login
 
@@ -88,7 +92,7 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 2. The app loads all items from `/api/items`.
 3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, delete, and organize with shelves from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links.
 4. Optionally create shelves such as `work`, `funny`, or `important`, add individual links to them, or attach an entire root domain so current and future links from that domain land on the same shelf automatically.
-5. Optionally import more Pocket, Instapaper, or Matter CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
+5. Optionally import more Pocket, Instapaper, Matter, or Raindrop CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
 
 ### Export And Backup
 
@@ -257,7 +261,7 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
 - Startup fails with `OPENSHELF_PASSWORD must be set before starting OpenShelf.`  
   Set `OPENSHELF_PASSWORD` in your environment or `.env`.
 
-- Everyone gets logged out after a restart.  
+- I get logged out after a restart.  
   This is expected in the current implementation. The session signing secret is generated at process startup, so restarts invalidate old cookies.
 
 - Login works in development but fails behind a production proxy.  
