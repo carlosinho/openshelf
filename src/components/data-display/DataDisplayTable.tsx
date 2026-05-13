@@ -25,6 +25,7 @@ interface DataDisplayTableProps {
   searchQuery: string
   hasSelectedStatuses: boolean
   dateFilter: DateFilterValue
+  hasBuiltInDateView: boolean
   onlyHomepages: boolean
   onlyProblematic: boolean
   selectedPlatforms: Record<SupportedPlatform, boolean>
@@ -44,6 +45,7 @@ export function DataDisplayTable({
   searchQuery,
   hasSelectedStatuses,
   dateFilter,
+  hasBuiltInDateView,
   onlyHomepages,
   onlyProblematic,
   selectedPlatforms,
@@ -60,6 +62,7 @@ export function DataDisplayTable({
           {searchQuery ||
           !hasSelectedStatuses ||
           dateFilter.mode !== 'none' ||
+          hasBuiltInDateView ||
           onlyHomepages ||
           onlyProblematic ||
           Object.values(selectedPlatforms).some(Boolean) ||

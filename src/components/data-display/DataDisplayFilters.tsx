@@ -8,6 +8,14 @@ import type { Shelf } from '../../types/pocket'
 import { cn } from '../../lib/utils'
 import { PlatformIcon } from './dataDisplayBadges'
 
+export type BuiltInDateView = 'none' | 'added_this_week' | 'months_1_to_6_old' | 'older_than_1_year'
+
+const BUILT_IN_DATE_VIEW_OPTIONS: Array<{ value: BuiltInDateView; label: string }> = [
+  { value: 'added_this_week', label: 'Added this week' },
+  { value: 'months_1_to_6_old', label: '1-6 months old' },
+  { value: 'older_than_1_year', label: 'Older than 1 year' },
+]
+
 interface DataDisplayFiltersProps {
   id: string
   searchQuery: string
@@ -22,6 +30,7 @@ interface DataDisplayFiltersProps {
   shelves: Shelf[]
   selectedShelfIds: number[]
   dateFilter: DateFilterValue
+  builtInDateView: BuiltInDateView
   onToggleFiltersOpen: () => void
   onSearchQueryChange: (value: string) => void
   onResetFilters: () => void
@@ -30,6 +39,7 @@ interface DataDisplayFiltersProps {
   onTogglePlatformFilter: (platform: SupportedPlatform) => void
   onToggleShelfFilter: (shelfId: number) => void
   onDateFilterChange: (value: DateFilterValue) => void
+  onBuiltInDateViewChange: (value: BuiltInDateView) => void
 }
 
 export function DataDisplayFilters({
@@ -46,6 +56,7 @@ export function DataDisplayFilters({
   shelves,
   selectedShelfIds,
   dateFilter,
+  builtInDateView,
   onToggleFiltersOpen,
   onSearchQueryChange,
   onResetFilters,
@@ -54,6 +65,7 @@ export function DataDisplayFilters({
   onTogglePlatformFilter,
   onToggleShelfFilter,
   onDateFilterChange,
+  onBuiltInDateViewChange,
 }: DataDisplayFiltersProps) {
   return (
     <div className="mb-3 lg:mb-6">
@@ -160,34 +172,67 @@ export function DataDisplayFilters({
                 </div>
               </div>
 
-              <div className="inline-flex items-center gap-2">
-                <Switch
-                  id={`${id}-homepage-filter`}
-                  checked={onlyHomepages}
-                  onCheckedChange={onOnlyHomepagesChange}
-                  aria-label="Show only homepages"
-                />
-                <Label htmlFor={`${id}-homepage-filter`} className="text-sm font-medium">
-                  Only homepages
-                </Label>
-              </div>
-
-              {hasProblematicItems && (
-                <div className="mt-3 inline-flex items-center gap-2 md:ml-4 md:mt-0">
+              <div className="space-y-3 md:flex md:flex-wrap md:items-center md:gap-4 md:space-y-0">
+                <div className="inline-flex items-center gap-2">
                   <Switch
-                    id={`${id}-problematic-filter`}
-                    checked={onlyProblematic}
-                    onCheckedChange={onOnlyProblematicChange}
-                    aria-label="Show only problematic URLs"
+                    id={`${id}-homepage-filter`}
+                    checked={onlyHomepages}
+                    onCheckedChange={onOnlyHomepagesChange}
+                    aria-label="Show only homepages"
                   />
-                  <Label htmlFor={`${id}-problematic-filter`} className="text-sm font-medium">
-                    Only problematic
+                  <Label htmlFor={`${id}-homepage-filter`} className="text-sm font-medium">
+                    Only homepages
                   </Label>
                 </div>
-              )}
+
+                {hasProblematicItems && (
+                  <div className="inline-flex items-center gap-2">
+                    <Switch
+                      id={`${id}-problematic-filter`}
+                      checked={onlyProblematic}
+                      onCheckedChange={onOnlyProblematicChange}
+                      aria-label="Show only problematic URLs"
+                    />
+                    <Label htmlFor={`${id}-problematic-filter`} className="text-sm font-medium">
+                      Only problematic
+                    </Label>
+                  </div>
+                )}
+              </div>
             </fieldset>
 
-            <DateRangeFilter value={dateFilter} onChange={onDateFilterChange} />
+            <div className="space-y-4">
+              <DateRangeFilter value={dateFilter} onChange={onDateFilterChange} />
+
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Date filter presets</legend>
+                <div className="flex flex-wrap gap-2">
+                  {BUILT_IN_DATE_VIEW_OPTIONS.map((option) => {
+                    const isSelected = builtInDateView === option.value
+
+                    return (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          onBuiltInDateViewChange(isSelected ? 'none' : option.value)
+                        }
+                        className={cn(
+                          'gap-2',
+                          isSelected &&
+                            'border-slate-900 bg-slate-900 text-slate-50 hover:bg-slate-800 hover:text-slate-50'
+                        )}
+                        aria-pressed={isSelected}
+                      >
+                        {option.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              </fieldset>
+            </div>
           </div>
         </div>
       )}

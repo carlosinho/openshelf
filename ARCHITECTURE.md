@@ -41,7 +41,7 @@ Absent by design right now:
 - `items.url` is globally unique inside one OpenShelf instance.
 - Auth is instance-wide. There are no users, roles, or per-item ownership rules.
 - All `/api/*` routes require auth except `/api/health` and `/api/auth/login`.
-- The browser normally loads the full library with `GET /api/items` and then applies status selection, search, platform filters, shelf filters, homepage-only and problem-only filters, sorting, pagination, and browser-side CSV export locally.
+- The browser normally loads the full library with `GET /api/items` and then applies status selection, search, platform filters, shelf filters, custom date filters, built-in date filter presets, homepage-only and problem-only filters, sorting, pagination, and browser-side CSV export locally.
 - The main list view defaults to unread-only. Two header checkboxes control status selection: unread, archive, both, or neither.
 - Status selection is treated as the current list scope rather than as a counted filter badge inside the filter drawer.
 - The built-in CSV upload UI is shown on first run and remains available from the main library view for later merge imports.
@@ -160,7 +160,7 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 
 1. `GET /api/items` returns all rows ordered by `time_added DESC, id DESC`, with `shelf_ids` resolved from both explicit item memberships and matching root-domain rules.
 2. `GET /api/shelves` returns shelf metadata plus saved domain rules.
-3. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, shelf, date, homepage-only, problem-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
+3. `DataDisplay.tsx` is the stateful library orchestrator and computes header status selection, search, platform, shelf, custom date, built-in date preset, homepage-only, and problem-only filters, sorting, pagination, and selection entirely in memory. Presentational sections of that screen live under `src/components/data-display/`.
 4. The default authenticated library view enables only the unread checkbox in the header. Enabling both checkboxes behaves like the old "all" view, while disabling both produces an empty result set.
 5. Rows can display a small platform icon for recognized Twitter/X, Reddit, and GitHub links, derived from the stored URL in the browser.
 6. Row-level and bulk archive controls use `PATCH /api/items/:id` to flip `status` between `unread` and `archive`.
@@ -170,8 +170,9 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 10. Clear archived deletes every row whose `status` is `archive`.
 11. Manual add posts a URL to `POST /api/items`.
 12. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
-13. If the library contains saved problem URLs, the filter drawer shows an `Only problematic` toggle alongside `Only homepages`.
-14. After every mutation, the frontend refetches the full library and shelf list rather than patching local state incrementally.
+13. The filter drawer includes the existing custom date filter UI plus a `Date filter presets` section for `Added this week`, `1-6 months old`, and `Older than 1 year`.
+14. If the library contains saved problem URLs, the filter drawer shows an `Only problematic` toggle alongside `Only homepages`.
+15. After every mutation, the frontend refetches the full library and shelf list rather than patching local state incrementally.
 
 ### URL Validation
 
@@ -301,7 +302,7 @@ Security boundary:
 
 - The architecture is intentionally scoped to one shared library for one operator.
 - All items are loaded into browser memory at once.
-- Search, filtering, sorting, pagination, shelf filtering, selection, and the main export path all scale with the in-memory list coordinated by `DataDisplay.tsx`.
+- Search, filtering, built-in date presets, sorting, pagination, shelf filtering, selection, and the main export path all scale with the in-memory list coordinated by `DataDisplay.tsx`.
 - The main library UI has been split into `src/components/data-display/`, but `DataDisplay.tsx` still owns the central state and workflow orchestration for that screen.
 - There is no virtualization, server-side querying, background revalidation queue, or multi-process coordination.
 - The roadmap already calls out large-list performance as an open question above roughly `50k` items.

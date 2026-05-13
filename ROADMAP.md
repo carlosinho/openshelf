@@ -86,9 +86,8 @@ Versions prior to v0.30 considered legacy.
     - It still only classifies links as `valid` or `problem`, but it is more reliable for normal dead-link checks and persists completed batches as they finish.
     - Obvious Cloudflare challenge `403` responses are treated as non-problematic so challenge pages are less likely to be mistaken for dead URLs.
     - Added a built-in filter view for `problem URLs`.
-- [ ] More built-in filter views.
-    - New filter views for `added this week`, `1-6 months old`, `older than 1 year`. 
-    - New filter views for `untitled links`. Add as a toggle between "only homepages" and "only problematic".
+- [x] Date filter presets.
+    - New filter views for `added this week`, `1-6 months old`, `older than 1 year`.
 
 ### v0.86 - Bug squashing
 - [ ] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?

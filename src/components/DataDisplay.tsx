@@ -26,7 +26,7 @@ import {
 } from '../utils/urlValidator'
 import { type DateFilterValue } from './ui/date-range-filter'
 import { DataDisplayBulkActions } from './data-display/DataDisplayBulkActions'
-import { DataDisplayFilters } from './data-display/DataDisplayFilters'
+import { DataDisplayFilters, type BuiltInDateView } from './data-display/DataDisplayFilters'
 import { DataDisplayHeaderActions } from './data-display/DataDisplayHeaderActions'
 import { DataDisplayHeaderPanels } from './data-display/DataDisplayHeaderPanels'
 import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeaderStatusFilters'
@@ -59,6 +59,33 @@ type ShelfAssignmentState = {
   availableDomains: string[]
 }
 
+function matchesBuiltInDateView(item: PocketItem, view: BuiltInDateView, now: Date) {
+  if (view === 'none') {
+    return true
+  }
+
+  const itemDate = new Date(item.time_added * 1000)
+
+  if (view === 'added_this_week') {
+    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+    return itemDate >= sevenDaysAgo
+  }
+
+  if (view === 'months_1_to_6_old') {
+    const oneMonthAgo = new Date(now)
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+
+    const sixMonthsAgo = new Date(now)
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6)
+
+    return itemDate < oneMonthAgo && itemDate >= sixMonthsAgo
+  }
+
+  const oneYearAgo = new Date(now)
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+  return itemDate < oneYearAgo
+}
+
 export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplayProps) {
   const id = useId()
   const [searchQuery, setSearchQuery] = useState('')
@@ -87,6 +114,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const [addError, setAddError] = useState<string | null>(null)
   const [isAddingLoading, setIsAddingLoading] = useState(false)
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({ mode: 'none' })
+  const [builtInDateView, setBuiltInDateView] = useState<BuiltInDateView>('none')
   const [onlyHomepages, setOnlyHomepages] = useState(false)
   const [onlyProblematic, setOnlyProblematic] = useState(false)
   const [validationState, setValidationState] = useState<ValidationState>({
@@ -252,6 +280,8 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   }
 
   const filteredAndSortedData = useMemo(() => {
+    const now = new Date()
+
     const filtered = data.filter((item) => {
       const normalizedSearchQuery = searchQuery.toLowerCase()
       const matchesSearch =
@@ -315,6 +345,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
 
       const matchesHomepage = !onlyHomepages || isHomepage(item.url)
       const matchesProblematic = !onlyProblematic || item.validation_status === 'problem'
+      const matchesBuiltInDate = matchesBuiltInDateView(item, builtInDateView, now)
 
       return (
         matchesSearch &&
@@ -323,6 +354,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         matchesShelf &&
         matchesDate &&
         matchesHomepage &&
+        matchesBuiltInDate &&
         matchesProblematic
       )
     })
@@ -337,6 +369,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   }, [
     data,
     dateFilter,
+    builtInDateView,
     hasAnyTags,
     onlyHomepages,
     onlyProblematic,
@@ -486,6 +519,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
 
   const activeFilterCount = [
     dateFilter.mode !== 'none',
+    builtInDateView !== 'none',
     onlyHomepages,
     onlyProblematic,
     Object.values(selectedPlatforms).some(Boolean),
@@ -572,6 +606,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     selectedShelfIds,
     itemsPerPage,
     dateFilter,
+    builtInDateView,
     onlyHomepages,
     onlyProblematic,
   ])
@@ -593,6 +628,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const handleResetFilters = () => {
     setSearchQuery('')
     setDateFilter({ mode: 'none' })
+    setBuiltInDateView('none')
     setOnlyHomepages(false)
     setOnlyProblematic(false)
     setSelectedShelfIds([])
@@ -845,6 +881,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         shelves={shelves}
         selectedShelfIds={selectedShelfIds}
         dateFilter={dateFilter}
+        builtInDateView={builtInDateView}
         onToggleFiltersOpen={() => setIsFiltersOpen((prev) => !prev)}
         onSearchQueryChange={setSearchQuery}
         onResetFilters={handleResetFilters}
@@ -853,6 +890,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         onTogglePlatformFilter={togglePlatformFilter}
         onToggleShelfFilter={toggleShelfFilter}
         onDateFilterChange={setDateFilter}
+        onBuiltInDateViewChange={setBuiltInDateView}
       />
 
       <DataDisplayValidationStatus
@@ -894,6 +932,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         searchQuery={searchQuery}
         hasSelectedStatuses={hasSelectedStatuses}
         dateFilter={dateFilter}
+        hasBuiltInDateView={builtInDateView !== 'none'}
         onlyHomepages={onlyHomepages}
         onlyProblematic={onlyProblematic}
         selectedPlatforms={selectedPlatforms}
