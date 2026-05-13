@@ -81,8 +81,18 @@ Versions prior to v0.30 considered legacy.
 - [x] Import logic for Raindrop.
     - Make it possible to import from Raindrop.
     - Use the existing scaffolding UI for this.
-- [ ] A stronger server-side checker for URL validation (the "check URLs" feature)
-    - URL validation is a browser-side iframe workaround, so it can only classify links as `valid` or `problem` and will never be fully reliable. Building a more reliable method that actually detects everything correctly has proven hard on the previous serverless setup that this app was on (pre pivot) since calls from user browsers like that to get HTTP headers are usually blocked - the iframe method was used as a workaround.
+- [x] A stronger server-side checker for URL validation (the "check URLs" feature)
+    - URL validation now runs through a server-side batched checker instead of the old browser iframe workaround.
+    - It still only classifies links as `valid` or `problem`, but it is more reliable for normal dead-link checks and persists completed batches as they finish.
+    - Obvious Cloudflare challenge `403` responses are treated as non-problematic so challenge pages are less likely to be mistaken for dead URLs.
+    - Added a built-in filter view for `problem URLs`.
+- [ ] More built-in filter views.
+    - New filter views for `added this week`, `1-6 months old`, `older than 1 year`. 
+    - New filter views for `untitled links`. Add as a toggle between "only homepages" and "only problematic".
+
+### v0.86 - Bug squashing
+- [ ] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?
+- [ ] How much work would it be to add a central API error handler?
 
 ### v0.90 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
@@ -90,15 +100,12 @@ Versions prior to v0.30 considered legacy.
     - Option to upload their own logo.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
 
-### v0.100 - Advanced filtering and imports
+### v0.100 - Advanced imports and bulk actions
 - [ ] Import mapping wizard for unknown CSVs
     - This is for importing generic “URL/title/date” CSVs.
     - Let the user map columns like `url`, `title`, `created_at`, `tags`, `status` instead of rejecting the file. This would make OpenShelf usable for random old exports and hand-built spreadsheets.
 - [ ] Bulk domain actions.
     - Things like “archive all from this domain”, “delete all from this domain”, “move domain to shelf”.
-- [ ] More built-in filter views.
-    - New filter views for `added this week`, `1-6 months old`, `older than 1 year`. 
-    - New filter views for `untitled links`, `problem URLs`. These can be high-value for inherited or migrated archives.
 - [ ] Bring back "archive cleanup"
     - There is an "archive cleanup" feature that's a leftover from a previous iteration of the app. The code for that feature is still there but there is no interface for it now. Let's add a simple interface back. Add a new option under the Actions drop down. Just call it "Wipe archive". Add another confirmation for this one. We don't want users clicking it by accident and having the entire archive deleted.
 

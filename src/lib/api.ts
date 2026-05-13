@@ -110,6 +110,26 @@ export async function patchItem(
   })
 }
 
+export interface UrlCheckBatchResult {
+  id: number
+  status: 'valid' | 'problem'
+}
+
+export interface UrlCheckBatchResponse {
+  ok: true
+  checked: number
+  checked_at: number
+  results: UrlCheckBatchResult[]
+}
+
+export async function checkUrls(ids: number[], signal?: AbortSignal) {
+  return apiRequest<UrlCheckBatchResponse>('/api/items/check-urls', {
+    method: 'POST',
+    body: JSON.stringify({ ids }),
+    signal,
+  })
+}
+
 export async function importFiles(files: File[], source: ImportSource = 'pocket') {
   const formData = new FormData()
 

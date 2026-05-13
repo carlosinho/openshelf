@@ -26,6 +26,7 @@ interface DataDisplayTableProps {
   hasSelectedStatuses: boolean
   dateFilter: DateFilterValue
   onlyHomepages: boolean
+  onlyProblematic: boolean
   selectedPlatforms: Record<SupportedPlatform, boolean>
   selectedShelfIdsCount: number
   onTogglePageSelection: (checked: boolean) => void
@@ -44,6 +45,7 @@ export function DataDisplayTable({
   hasSelectedStatuses,
   dateFilter,
   onlyHomepages,
+  onlyProblematic,
   selectedPlatforms,
   selectedShelfIdsCount,
   onTogglePageSelection,
@@ -59,6 +61,7 @@ export function DataDisplayTable({
           !hasSelectedStatuses ||
           dateFilter.mode !== 'none' ||
           onlyHomepages ||
+          onlyProblematic ||
           Object.values(selectedPlatforms).some(Boolean) ||
           selectedShelfIdsCount > 0
             ? 'No items match your filters.'

@@ -10,7 +10,7 @@
       <br /><br />
       It is a single-user read-later manager built for people who want full control over their reading queue. 
       <br /><br />
-      OpenShelf runs as a private web app, stores everything in a SQLite database, and gives you a simple workflow for adding links, organizing them into thematic shelves, filtering, archiving what you’ve read, cleaning up old URLs, exporting CSVs, and downloading raw database backups. It can also import compatible CSV reading lists from other tools if you already have an archive you want to bring with you.
+      OpenShelf runs as a private web app, stores everything in a SQLite database, and gives you a simple workflow for adding links, organizing them into thematic shelves, filtering, archiving what you’ve read, checking URLs, cleaning up old URLs, exporting CSVs, and downloading raw database backups. It can also import compatible CSV reading lists from other tools if you already have an archive you want to bring with you.
     </td>
   </tr>
 </table>
@@ -36,6 +36,7 @@ It is not a hosted sync service, social bookmarking platform, team knowledge bas
 - Import compatible CSV files.
 - Organize links into shelves.
 - Filter, search, sort, archive, unarchive, and delete links.
+- Run server-side URL checks on the current filtered unread set and filter down to problematic links.
 - Export all items, filtered views, or selected rows to CSV.
 - Download a raw SQLite backup.
 
@@ -208,7 +209,7 @@ server/
   db.ts               # SQLite schema, queries, and backup serialization
   csv.ts              # CSV validation, parsing, merge, and export helpers
   routes/
-    items.ts          # List, create, patch, delete, bulk-delete, clear-archived
+    items.ts          # List, create, patch, URL-check, delete, bulk-delete, clear-archived
     shelves.ts        # Shelf CRUD, item assignment, and domain-rule routes
     import.ts         # CSV import, server-side CSV export, SQLite backup
 src/
@@ -240,6 +241,7 @@ ARCHITECTURE.md
 | `GET` | `/api/auth/check` | Verify current session. |
 | `GET` | `/api/items` | Return all saved items. |
 | `POST` | `/api/items` | Add one URL. Manual adds normalize the URL and default to `unread`. |
+| `POST` | `/api/items/check-urls` | Check up to 10 unread item URLs server-side and persist `validation_status`. |
 | `PATCH` | `/api/items/:id` | Update fields such as `status`, `title`, `tags`, or validation metadata. |
 | `DELETE` | `/api/items/:id` | Delete one item. |
 | `POST` | `/api/items/bulk-delete` | Delete many items by `ids`. |
@@ -278,6 +280,9 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
 
 - A manually added link is slow to save or ends up titled as the URL.  
   The server tries to fetch a page title first. If that fetch is blocked or fails, OpenShelf falls back to the normalized URL string.
+
+- URL checking marks some links as `problem` even though they open in my browser.  
+  The checker runs from the server, not your browser. Some sites block or challenge server-side fetches differently than normal browser visits. OpenShelf also treats obvious Cloudflare challenge pages as non-problematic, so the result is best-effort rather than perfect.
 
 - Large libraries feel heavy.  
   The current app loads all items into browser memory and applies search, filtering, sorting, pagination, and CSV export client-side.

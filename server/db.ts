@@ -30,6 +30,18 @@ export interface ImportSummary {
   duplicateCount: number
 }
 
+export interface ValidationCandidate {
+  id: number
+  url: string
+  status: ItemStatus
+}
+
+export interface ValidationBatchUpdate {
+  id: number
+  validation_status: Extract<ValidationStatus, 'valid' | 'problem'>
+  validation_checked_at: number
+}
+
 export interface AddShelfDomainResult {
   domain: string
   linkedItems: number
@@ -330,6 +342,37 @@ export function getItemByUrl(url: string): PocketItem | null {
   return item ? attachShelfIds([item])[0] ?? null : null
 }
 
+export function getItemsForValidation(ids: number[]): ValidationCandidate[] {
+  const uniqueIds = Array.from(new Set(ids.filter((id) => Number.isInteger(id))))
+
+  if (uniqueIds.length === 0) {
+    return []
+  }
+
+  const placeholders = uniqueIds.map(() => '?').join(', ')
+  const rows = db
+    .query(`SELECT id, url, status FROM items WHERE id IN (${placeholders})`)
+    .all(...uniqueIds) as Array<Record<string, unknown>>
+
+  return rows
+    .map((row) => {
+      const id = Number(row.id)
+      const url = typeof row.url === 'string' ? row.url : ''
+      const status = row.status === 'archive' ? 'archive' : row.status === 'unread' ? 'unread' : null
+
+      if (!Number.isInteger(id) || !url || !status) {
+        return null
+      }
+
+      return {
+        id,
+        url,
+        status,
+      }
+    })
+    .filter((item): item is ValidationCandidate => item !== null)
+}
+
 export function addItem(input: CreateItemInput): PocketItem {
   const archivedAt = input.archived_at ?? (input.status === 'archive' ? getCurrentTimestamp() : null)
   const insertResult = db
@@ -428,6 +471,35 @@ export function updateItem(id: number, fields: UpdateItemInput): PocketItem | nu
   `).run(...values)
 
   return getItemById(id)
+}
+
+export function updateItemsValidation(updates: ValidationBatchUpdate[]) {
+  if (updates.length === 0) {
+    return 0
+  }
+
+  const updateStatement = db.query(`
+    UPDATE items
+    SET validation_status = ?, validation_checked_at = ?
+    WHERE id = ?
+  `)
+
+  let updatedCount = 0
+
+  const transaction = db.transaction((rows: ValidationBatchUpdate[]) => {
+    for (const row of rows) {
+      const result = updateStatement.run(
+        row.validation_status,
+        row.validation_checked_at,
+        row.id
+      ) as { changes: number }
+
+      updatedCount += Number(result.changes ?? 0)
+    }
+  })
+
+  transaction(updates)
+  return updatedCount
 }
 
 export function importItems(items: ImportItemInput[]): ImportSummary {

@@ -88,6 +88,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const [isAddingLoading, setIsAddingLoading] = useState(false)
   const [dateFilter, setDateFilter] = useState<DateFilterValue>({ mode: 'none' })
   const [onlyHomepages, setOnlyHomepages] = useState(false)
+  const [onlyProblematic, setOnlyProblematic] = useState(false)
   const [validationState, setValidationState] = useState<ValidationState>({
     isRunning: false,
     progress: { checked: 0, total: 0, valid: 0, problems: 0 },
@@ -232,6 +233,10 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     return data.some((item) => item.tags && item.tags.trim() !== '')
   }, [data])
 
+  const hasProblematicItems = useMemo(() => {
+    return data.some((item) => item.validation_status === 'problem')
+  }, [data])
+
   const selectedData = useMemo(() => {
     return data.filter((item) => selectedItems.has(item.id))
   }, [data, selectedItems])
@@ -309,6 +314,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
       }
 
       const matchesHomepage = !onlyHomepages || isHomepage(item.url)
+      const matchesProblematic = !onlyProblematic || item.validation_status === 'problem'
 
       return (
         matchesSearch &&
@@ -316,7 +322,8 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         matchesPlatform &&
         matchesShelf &&
         matchesDate &&
-        matchesHomepage
+        matchesHomepage &&
+        matchesProblematic
       )
     })
 
@@ -332,6 +339,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     dateFilter,
     hasAnyTags,
     onlyHomepages,
+    onlyProblematic,
     searchQuery,
     selectedPlatforms,
     selectedShelfIds,
@@ -415,21 +423,6 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         controller.signal
       )
 
-      const updates = data
-        .map((item) => {
-          const result = results.get(item.url)
-          if (!result) {
-            return null
-          }
-
-          return patchItem(item.id, {
-            validation_status: result.status,
-            validation_checked_at: Date.now(),
-          })
-        })
-        .filter((update): update is Promise<PocketItem> => update !== null)
-
-      await Promise.all(updates)
       await onRefresh?.()
 
       setValidationState((prev) => ({
@@ -494,6 +487,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const activeFilterCount = [
     dateFilter.mode !== 'none',
     onlyHomepages,
+    onlyProblematic,
     Object.values(selectedPlatforms).some(Boolean),
     selectedShelfIds.length > 0,
   ].filter(Boolean).length
@@ -557,6 +551,12 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     addLinkInputRef.current?.select()
   }, [isAddingLink])
 
+  React.useEffect(() => {
+    if (!hasProblematicItems && onlyProblematic) {
+      setOnlyProblematic(false)
+    }
+  }, [hasProblematicItems, onlyProblematic])
+
   const totalItems = filteredAndSortedData.length
   const totalPages = Math.ceil(totalItems / itemsPerPage)
   const startIndex = (currentPage - 1) * itemsPerPage
@@ -565,7 +565,16 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
 
   React.useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, selectedStatuses, selectedPlatforms, selectedShelfIds, itemsPerPage, dateFilter, onlyHomepages])
+  }, [
+    searchQuery,
+    selectedStatuses,
+    selectedPlatforms,
+    selectedShelfIds,
+    itemsPerPage,
+    dateFilter,
+    onlyHomepages,
+    onlyProblematic,
+  ])
 
   React.useEffect(() => {
     return () => {
@@ -585,6 +594,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
     setSearchQuery('')
     setDateFilter({ mode: 'none' })
     setOnlyHomepages(false)
+    setOnlyProblematic(false)
     setSelectedShelfIds([])
     setSelectedPlatforms({
       twitter: false,
@@ -828,7 +838,9 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         activeFilterCount={activeFilterCount}
         isFiltersOpen={isFiltersOpen}
         hasActiveFilters={hasActiveFilters}
+        hasProblematicItems={hasProblematicItems}
         onlyHomepages={onlyHomepages}
+        onlyProblematic={onlyProblematic}
         selectedPlatforms={selectedPlatforms}
         shelves={shelves}
         selectedShelfIds={selectedShelfIds}
@@ -837,6 +849,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         onSearchQueryChange={setSearchQuery}
         onResetFilters={handleResetFilters}
         onOnlyHomepagesChange={setOnlyHomepages}
+        onOnlyProblematicChange={setOnlyProblematic}
         onTogglePlatformFilter={togglePlatformFilter}
         onToggleShelfFilter={toggleShelfFilter}
         onDateFilterChange={setDateFilter}
@@ -882,6 +895,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
         hasSelectedStatuses={hasSelectedStatuses}
         dateFilter={dateFilter}
         onlyHomepages={onlyHomepages}
+        onlyProblematic={onlyProblematic}
         selectedPlatforms={selectedPlatforms}
         selectedShelfIdsCount={selectedShelfIds.length}
         onTogglePageSelection={handleTogglePageSelection}

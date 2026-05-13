@@ -15,7 +15,9 @@ interface DataDisplayFiltersProps {
   activeFilterCount: number
   isFiltersOpen: boolean
   hasActiveFilters: boolean
+  hasProblematicItems: boolean
   onlyHomepages: boolean
+  onlyProblematic: boolean
   selectedPlatforms: Record<SupportedPlatform, boolean>
   shelves: Shelf[]
   selectedShelfIds: number[]
@@ -24,6 +26,7 @@ interface DataDisplayFiltersProps {
   onSearchQueryChange: (value: string) => void
   onResetFilters: () => void
   onOnlyHomepagesChange: (checked: boolean) => void
+  onOnlyProblematicChange: (checked: boolean) => void
   onTogglePlatformFilter: (platform: SupportedPlatform) => void
   onToggleShelfFilter: (shelfId: number) => void
   onDateFilterChange: (value: DateFilterValue) => void
@@ -36,7 +39,9 @@ export function DataDisplayFilters({
   activeFilterCount,
   isFiltersOpen,
   hasActiveFilters,
+  hasProblematicItems,
   onlyHomepages,
+  onlyProblematic,
   selectedPlatforms,
   shelves,
   selectedShelfIds,
@@ -45,6 +50,7 @@ export function DataDisplayFilters({
   onSearchQueryChange,
   onResetFilters,
   onOnlyHomepagesChange,
+  onOnlyProblematicChange,
   onTogglePlatformFilter,
   onToggleShelfFilter,
   onDateFilterChange,
@@ -165,6 +171,20 @@ export function DataDisplayFilters({
                   Only homepages
                 </Label>
               </div>
+
+              {hasProblematicItems && (
+                <div className="mt-3 inline-flex items-center gap-2 md:ml-4 md:mt-0">
+                  <Switch
+                    id={`${id}-problematic-filter`}
+                    checked={onlyProblematic}
+                    onCheckedChange={onOnlyProblematicChange}
+                    aria-label="Show only problematic URLs"
+                  />
+                  <Label htmlFor={`${id}-problematic-filter`} className="text-sm font-medium">
+                    Only problematic
+                  </Label>
+                </div>
+              )}
             </fieldset>
 
             <DateRangeFilter value={dateFilter} onChange={onDateFilterChange} />
