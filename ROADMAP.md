@@ -90,7 +90,7 @@ Versions prior to v0.30 considered legacy.
     - New filter views for `added this week`, `1-6 months old`, `older than 1 year`.
 
 ### v0.86 - Bug squashing
-- [ ] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?
+- [x] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?
 - [ ] How much work would it be to add a central API error handler?
 
 ### v0.90 - API, selfbrand

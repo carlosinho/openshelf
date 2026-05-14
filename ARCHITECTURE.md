@@ -282,7 +282,7 @@ Security boundary:
 - Domain shelf rules use root-domain matching via `tldts`, so subdomains like `www.example.com` and `blog.example.com` resolve to the same shelf rule target.
 - Manual add rejects invalid URLs and exact duplicates with explicit errors.
 - Manual add title fetching is best-effort and swallowed on failure; fallback title is the normalized URL.
-- Manual add title fetching has no explicit timeout in `server/routes/items.ts`, so a slow site can delay completion.
+- Manual add title fetching uses the same `8` second timeout budget as URL validation in `server/routes/items.ts`, so very slow sites fall back instead of delaying manual add indefinitely.
 - URL validation is still heuristic. Some sites block or challenge server-side fetches differently than a human browser visit, and the checker now special-cases obvious Cloudflare challenge `403` responses so they are less likely to be marked `problem`.
 - Single delete returns `404` if the row is missing. Bulk delete returns a deleted count and does not fail if some IDs do not exist.
 - `PATCH /api/items/:id` with no recognized fields returns the current row unchanged.

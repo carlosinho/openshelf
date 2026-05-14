@@ -17,6 +17,7 @@ const TWITTER_TITLE_MAX_LENGTH = 70
 const REDDIT_REQUEST_USER_AGENT = 'OpenShelf/0.50 (+self-hosted read-later app)'
 const URL_CHECK_REQUEST_USER_AGENT = 'OpenShelf/0.80 URL checker (+self-hosted read-later app)'
 const URL_CHECK_TIMEOUT_MS = 8000
+const TITLE_FETCH_TIMEOUT_MS = URL_CHECK_TIMEOUT_MS
 const URL_CHECK_BATCH_LIMIT = 10
 
 function extractFirstMatch(html: string, patterns: RegExp[]) {
@@ -144,17 +145,18 @@ function extractTwitterStatusTitleFromEmbedHtml(html: string) {
 
 async function fetchTwitterStatusTitle(url: string) {
   try {
-    const response = await fetch(getTwitterOEmbedUrl(url))
-    if (!response.ok) {
-      return null
-    }
+    return await fetchTitleWithTimeout(getTwitterOEmbedUrl(url), async (response) => {
+      if (!response.ok) {
+        return null
+      }
 
-    const payload = (await response.json()) as { html?: string }
-    if (!payload.html) {
-      return null
-    }
+      const payload = (await response.json()) as { html?: string }
+      if (!payload.html) {
+        return null
+      }
 
-    return extractTwitterStatusTitleFromEmbedHtml(payload.html)
+      return extractTwitterStatusTitleFromEmbedHtml(payload.html)
+    })
   } catch {
     return null
   }
@@ -162,21 +164,47 @@ async function fetchTwitterStatusTitle(url: string) {
 
 async function fetchRedditTitle(url: string) {
   try {
-    const response = await fetch(getRedditOEmbedUrl(url), {
-      headers: {
-        'User-Agent': REDDIT_REQUEST_USER_AGENT,
+    return await fetchTitleWithTimeout(
+      getRedditOEmbedUrl(url),
+      async (response) => {
+        if (!response.ok) {
+          return null
+        }
+
+        const payload = (await response.json()) as { title?: string }
+        const title = payload.title ? normalizeText(payload.title) : ''
+        return title || null
       },
-    })
-
-    if (!response.ok) {
-      return null
-    }
-
-    const payload = (await response.json()) as { title?: string }
-    const title = payload.title ? normalizeText(payload.title) : ''
-    return title || null
+      {
+        headers: {
+          'User-Agent': REDDIT_REQUEST_USER_AGENT,
+        },
+      }
+    )
   } catch {
     return null
+  }
+}
+
+async function fetchTitleWithTimeout<T>(
+  url: string,
+  readResponse: (response: Response) => Promise<T>,
+  init: RequestInit = {}
+) {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => {
+    controller.abort()
+  }, TITLE_FETCH_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+    })
+
+    return await readResponse(response)
+  } finally {
+    clearTimeout(timeoutId)
   }
 }
 
@@ -196,13 +224,14 @@ async function fetchPageTitle(url: string) {
       }
     }
 
-    const response = await fetch(url)
-    if (!response.ok) {
-      return null
-    }
+    return await fetchTitleWithTimeout(url, async (response) => {
+      if (!response.ok) {
+        return null
+      }
 
-    const html = await response.text()
-    return extractTitle(html)
+      const html = await response.text()
+      return extractTitle(html)
+    })
   } catch {
     return null
   }

@@ -279,7 +279,7 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
   Shelf rules match the root domain, so `www.example.com` and `blog.example.com` both count as `example.com`.
 
 - A manually added link is slow to save or ends up titled as the URL.  
-  The server tries to fetch a page title first. If that fetch is blocked or fails, OpenShelf falls back to the normalized URL string.
+  The server tries to fetch a page title first. That fetch is best-effort and uses an `8` second timeout. If it times out, is blocked, or otherwise fails, OpenShelf falls back to the normalized URL string.
 
 - URL checking marks some links as `problem` even though they open in my browser.  
   The checker runs from the server, not your browser. Some sites block or challenge server-side fetches differently than normal browser visits. OpenShelf also treats obvious Cloudflare challenge pages as non-problematic, so the result is best-effort rather than perfect.
