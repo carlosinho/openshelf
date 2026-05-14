@@ -1,5 +1,6 @@
 import { join } from 'path'
 import { Hono } from 'hono'
+import { HTTPException } from 'hono/http-exception'
 import { authRoutes, initializeAuth, requireAuth } from './auth'
 import { getItemCount } from './db'
 import { importRoutes } from './routes/import'
@@ -10,6 +11,36 @@ await initializeAuth()
 
 const app = new Hono()
 const isDevelopment = process.env.NODE_ENV === 'development'
+
+function isApiPath(path: string) {
+  return path === '/api' || path.startsWith('/api/')
+}
+
+app.onError((error, c) => {
+  const path = c.req.path
+
+  if (!isApiPath(path)) {
+    console.error(`[OpenShelf] Unhandled error: ${c.req.method} ${path}`, error)
+    return c.text('Internal Server Error', 500)
+  }
+
+  if (error instanceof SyntaxError) {
+    return c.json({ error: 'Invalid request body.' }, 400)
+  }
+
+  if (error instanceof HTTPException) {
+    const status = error.status
+
+    if (status >= 500) {
+      console.error(`[OpenShelf] API error: ${c.req.method} ${path}`, error)
+    }
+
+    return c.json({ error: error.message || 'Request failed.' }, status)
+  }
+
+  console.error(`[OpenShelf] API error: ${c.req.method} ${path}`, error)
+  return c.json({ error: 'Internal server error.' }, 500)
+})
 
 app.get('/api/health', (c) => {
   return c.json({

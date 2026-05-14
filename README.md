@@ -204,7 +204,7 @@ The webpack dev server proxies `/api/*` to `http://localhost:3000`.
 
 ```text
 server/
-  index.ts            # Bun entry point and route mounting
+  index.ts            # Bun entry point, route mounting, central API error fallback
   auth.ts             # Password auth and signed session cookie handling
   db.ts               # SQLite schema, queries, and backup serialization
   csv.ts              # CSV validation, parsing, merge, and export helpers

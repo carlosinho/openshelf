@@ -228,7 +228,7 @@ Important exception: canceling a validation run stops future batches, but alread
 
 ### Route Composition
 
-- `server/index.ts`: app assembly, health route, auth mount, auth middleware, static serving, and Bun startup
+- `server/index.ts`: app assembly, health route, central API error handling, auth mount, auth middleware, static serving, and Bun startup
 - `server/auth.ts`: password login, logout, auth check, signed-cookie middleware
 - `server/routes/items.ts`: list/create/delete/url-check/bulk-delete/clear-archived/patch
 - `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
@@ -247,7 +247,7 @@ Important exception: canceling a validation run stops future batches, but alread
 ### Error Model
 
 - Expected validation/auth/not-found cases usually return JSON with an `error` field and status codes like `400`, `401`, `404`, or `409`.
-- There is no central `onError` handler in `server/index.ts`.
+- `server/index.ts` has a central `onError` handler for uncaught failures. API paths return JSON with an `error` field, malformed request bodies return `400`, and unexpected API/server errors are logged with method and path before returning a generic `500`.
 - Some invalid inputs rely on TypeScript expectations or SQLite constraints instead of explicit runtime validation. For example, invalid `status` values are not independently checked in the route handlers.
 
 ## Auth And Authorization

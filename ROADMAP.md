@@ -91,7 +91,9 @@ Versions prior to v0.30 considered legacy.
 
 ### v0.86 - Bug squashing
 - [x] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?
-- [ ] How much work would it be to add a central API error handler?
+- [x] Central API error handler.
+    - `server/index.ts` now has a central Hono `onError` fallback for uncaught API failures.
+    - Expected route-level validation/auth/not-found responses stay local, while unexpected API errors return a generic JSON `500` and are logged server-side.
 
 ### v0.90 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
