@@ -118,29 +118,46 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `OPENSHELF_PASSWORD` | Yes | none | Instance password. The server refuses to start without it. |
-| `PORT` | No | `3000` | Bun server port. |
-| `NODE_ENV` | No | unset | `development` enables split frontend/backend dev behavior. `production` marks cookies `Secure` and enables production messaging/static behavior. |
+| `PORT` | No | `3000` | Bun server port. Docker installs should leave this as `3000` inside the container. |
+| `OPENSHELF_HOST_PORT` | No | `3000` | Host port used by `docker-compose.yml`, for example `8080:3000` if set to `8080`. |
+| `NODE_ENV` | No | unset | `development` enables split frontend/backend dev behavior. `production` marks cookies `Secure`. |
 
-If you set `NODE_ENV=production`, use HTTPS. The auth cookie becomes `Secure`, so plain HTTP logins will not stick.
+Set `NODE_ENV=production` only when OpenShelf is served over HTTPS. In production mode, the login cookie is marked `Secure`, so browser login will not persist over plain HTTP.
 
 ## Install And Run
 
-### Docker Compose
+### Recommended: Docker Compose On A Server
 
-For a real server install, put OpenShelf in a persistent directory such as `/opt/openshelf` so the checked-out app files, `.env`, and `./data` survive restarts and upgrades.
+The normal OpenShelf install is a small Docker Compose service on a server or VPS. Put it in a persistent directory such as `/opt/openshelf` so the checked-out app files, `.env`, and `./data` survive restarts and upgrades.
 
 ```bash
-git clone <your-repo-url> /opt/openshelf
+git clone https://github.com/carlosinho/openshelf.git /opt/openshelf
 cd /opt/openshelf
 cp .env.example .env
-# edit .env and set OPENSHELF_PASSWORD to a real password
+# edit .env and replace OPENSHELF_PASSWORD=changeme with a real password
 mkdir -p data
 docker compose up -d --build
 ```
 
+If your user cannot write to `/opt`, create the directory with `sudo` first or clone into another persistent directory.
+
 Then open `http://YOUR_SERVER_IP:3000`.
 
-For local-only use on the same machine, you can run the same steps in any project directory and then open `http://localhost:3000`.
+If port `3000` is already used on the server, edit `.env` and set another host port:
+
+```env
+OPENSHELF_HOST_PORT=8080
+```
+
+Then open `http://YOUR_SERVER_IP:8080`.
+
+For a public domain, put OpenShelf behind a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel. Once the app is available at an HTTPS URL, you can enable secure cookies by uncommenting this in `.env`:
+
+```env
+NODE_ENV=production
+```
+
+Do not enable `NODE_ENV=production` if you are logging in over plain `http://`, including `http://YOUR_SERVER_IP:3000`, because the browser will reject the secure login cookie on non-HTTPS pages.
 
 Persistence:
 
@@ -149,10 +166,22 @@ Persistence:
 - Keep `./data` and `.env` when updating the app.
 - To stop or restart later, run `docker compose stop`, `docker compose start`, or `docker compose up -d`.
 
-### Bun On The Host
+Updating:
 
 ```bash
-git clone <your-repo-url> /opt/openshelf
+cd /opt/openshelf
+git pull
+docker compose up -d --build
+```
+
+Keep the existing `.env` and `data/openshelf.db`.
+
+### Bun On The Host
+
+This path is mainly for developers or operators who prefer to manage the Bun process themselves.
+
+```bash
+git clone https://github.com/carlosinho/openshelf.git /opt/openshelf
 cd /opt/openshelf
 cp .env.example .env
 # edit .env and set OPENSHELF_PASSWORD to a real password
@@ -194,7 +223,8 @@ The webpack dev server proxies `/api/*` to `http://localhost:3000`.
 ## Deploy
 
 - Production is one Bun process serving both the API and the built SPA.
-- The Docker image copies `dist/`, `server/`, `node_modules/`, and `package.json`, exposes port `3000`, and declares `/app/data` as a volume.
+- The Docker image builds the frontend, copies `dist/`, `server/`, `node_modules/`, and `package.json`, exposes port `3000`, and declares `/app/data` as a volume.
+- `docker-compose.yml` reads `.env`, mounts host `./data` to container `/app/data`, keeps the app listening on container port `3000`, and maps `OPENSHELF_HOST_PORT` on the host to that container port.
 - Static files are served from `dist/` whenever `NODE_ENV !== 'development'`.
 - If you run behind a reverse proxy and want secure cookies, set `NODE_ENV=production` and terminate TLS properly.
 - If `NODE_ENV=production`, logins must happen over HTTPS because the auth cookie becomes `Secure`.
