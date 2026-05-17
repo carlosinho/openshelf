@@ -94,6 +94,11 @@ Versions prior to v0.30 considered legacy.
 - [x] Central API error handler.
     - `server/index.ts` now has a central Hono `onError` fallback for uncaught API failures.
     - Expected route-level validation/auth/not-found responses stay local, while unexpected API errors return a generic JSON `500` and are logged server-side.
+- [x] Simplified install and release recommendations.
+    - The recommended server install is now the published Docker Hub image run directly with `docker run`.
+    - The docs now treat Docker as the explicit production path and show persistence through the named volume mounted at `/app/data`.
+    - The image now includes a healthcheck, and the repository now includes a GitHub Actions workflow that publishes Docker images only for version tags such as `v0.1.0`.
+    - `latest` now tracks the most recently published tagged release instead of every push to `main`.
 
 ### v0.90 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
