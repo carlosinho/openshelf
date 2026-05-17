@@ -118,85 +118,84 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 | Variable | Required | Default | Purpose |
 | --- | --- | --- | --- |
 | `OPENSHELF_PASSWORD` | Yes | none | Instance password. The server refuses to start without it. |
-| `PORT` | No | `3000` | Bun server port. Docker installs should leave this as `3000` inside the container. |
-| `OPENSHELF_HOST_PORT` | No | `3000` | Host port used by `docker-compose.yml`, for example `8080:3000` if set to `8080`. |
-| `NODE_ENV` | No | unset | `development` enables split frontend/backend dev behavior. `production` marks cookies `Secure`. |
+| `NODE_ENV` | No | unset | Set `production` only when OpenShelf is served over HTTPS. In that mode the login cookie is marked `Secure`. |
 
-Set `NODE_ENV=production` only when OpenShelf is served over HTTPS. In production mode, the login cookie is marked `Secure`, so browser login will not persist over plain HTTP.
+The official install is the published Docker image on Docker Hub. OpenShelf listens on container port `3000` and stores its SQLite data in `/app/data`.
+
+- Pass env vars to Docker with `docker run -e ...`. 
+- For Bun-based local development, set them in your shell or prefix the Bun command inline.
 
 ## Install And Run
 
-### Recommended: Docker Compose On A Server
+### Docker Hub On A Server
 
-The normal OpenShelf install is a small Docker Compose service on a server or VPS. Put it in a persistent directory such as `/opt/openshelf` so the checked-out app files, `.env`, and `./data` survive restarts and upgrades.
+OpenShelf is intended to run on a server or VPS as a single Docker container.
 
 ```bash
-git clone https://github.com/carlosinho/openshelf.git /opt/openshelf
-cd /opt/openshelf
-cp .env.example .env
-# edit .env and replace OPENSHELF_PASSWORD=changeme with a real password
-mkdir -p data
-docker compose up -d --build
+docker run -d \
+  --name openshelf \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e OPENSHELF_PASSWORD='replace-this-with-a-real-password' \
+  -v openshelf-data:/app/data \
+  carlosinho/openshelf:latest
 ```
-
-If your user cannot write to `/opt`, create the directory with `sudo` first or clone into another persistent directory.
 
 Then open `http://YOUR_SERVER_IP:3000`.
 
-If port `3000` is already used on the server, edit `.env` and set another host port:
+If port `3000` is already used on the server, change the host side of `-p`. For example, this maps host port `8080` to the container's internal port `3000`:
 
-```env
-OPENSHELF_HOST_PORT=8080
+```bash
+docker run -d \
+  --name openshelf \
+  --restart unless-stopped \
+  -p 8080:3000 \
+  -e OPENSHELF_PASSWORD='replace-this-with-a-real-password' \
+  -v openshelf-data:/app/data \
+  carlosinho/openshelf:latest
 ```
 
 Then open `http://YOUR_SERVER_IP:8080`.
 
-For a public domain, put OpenShelf behind a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel. Once the app is available at an HTTPS URL, you can enable secure cookies by uncommenting this in `.env`:
+For a public domain, put OpenShelf behind a reverse proxy such as Caddy, nginx, Traefik, or Cloudflare Tunnel. Once the app is available at an HTTPS URL, pass `NODE_ENV=production` to the container:
 
-```env
-NODE_ENV=production
+```bash
+docker run -d \
+  --name openshelf \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e OPENSHELF_PASSWORD='replace-this-with-a-real-password' \
+  -e NODE_ENV=production \
+  -v openshelf-data:/app/data \
+  carlosinho/openshelf:latest
 ```
 
 Do not enable `NODE_ENV=production` if you are logging in over plain `http://`, including `http://YOUR_SERVER_IP:3000`, because the browser will reject the secure login cookie on non-HTTPS pages.
 
 Persistence:
 
-- Host `./data` is mounted to container `/app/data`.
+- Docker volume `openshelf-data` is mounted to container `/app/data`.
 - The SQLite file is `data/openshelf.db`.
-- Keep `./data` and `.env` when updating the app.
-- To stop or restart later, run `docker compose stop`, `docker compose start`, or `docker compose up -d`.
+- Keep that volume when updating the container.
+- To stop or restart later, run `docker stop openshelf` or `docker restart openshelf`.
 
 Updating:
 
 ```bash
-cd /opt/openshelf
-git pull
-docker compose up -d --build
+docker pull carlosinho/openshelf:latest
+docker stop openshelf
+docker rm openshelf
+docker run -d \
+  --name openshelf \
+  --restart unless-stopped \
+  -p 3000:3000 \
+  -e OPENSHELF_PASSWORD='replace-this-with-your-existing-password' \
+  -v openshelf-data:/app/data \
+  carlosinho/openshelf:latest
 ```
 
-Keep the existing `.env` and `data/openshelf.db`.
-
-### Bun On The Host
-
-This path is mainly for developers or operators who prefer to manage the Bun process themselves.
-
-```bash
-git clone https://github.com/carlosinho/openshelf.git /opt/openshelf
-cd /opt/openshelf
-cp .env.example .env
-# edit .env and set OPENSHELF_PASSWORD to a real password
-bun install
-bun run start
-```
-
-Then open `http://YOUR_SERVER_IP:3000`.
-
-`bun run start` rebuilds the frontend and then starts the Bun server.
-
-Notes:
-
-- Keep the project directory persistent because OpenShelf stores its SQLite file in `data/openshelf.db`.
-- For a real server deployment, run the Bun process under a service manager such as `systemd`, `pm2`, or another supervisor so it starts again after reboot.
+- Removing the container does not remove the named volume or the SQLite database.
+- Keep the existing `openshelf-data` volume.
 
 ### Development
 
@@ -204,7 +203,7 @@ Run the API server:
 
 ```bash
 bun install
-bun run dev:server
+OPENSHELF_PASSWORD=changeme bun run dev:server
 ```
 
 Run the frontend dev server in another terminal:
@@ -223,12 +222,12 @@ The webpack dev server proxies `/api/*` to `http://localhost:3000`.
 ## Deploy
 
 - Production is one Bun process serving both the API and the built SPA.
-- The Docker image builds the frontend, copies `dist/`, `server/`, `node_modules/`, and `package.json`, exposes port `3000`, and declares `/app/data` as a volume.
-- `docker-compose.yml` reads `.env`, mounts host `./data` to container `/app/data`, keeps the app listening on container port `3000`, and maps `OPENSHELF_HOST_PORT` on the host to that container port.
+- The official production artifact is the Docker Hub image `carlosinho/openshelf`.
+- The Docker image builds the frontend, copies `dist/`, `server/`, `node_modules/`, and `package.json`, exposes port `3000`, declares `/app/data` as a volume, and includes a healthcheck against `/api/health`.
 - Static files are served from `dist/` whenever `NODE_ENV !== 'development'`.
 - If you run behind a reverse proxy and want secure cookies, set `NODE_ENV=production` and terminate TLS properly.
 - If `NODE_ENV=production`, logins must happen over HTTPS because the auth cookie becomes `Secure`.
-- When updating a server install, pull the new code, rebuild/restart the app, and keep the existing `.env` and `data/openshelf.db`.
+- When updating a server install, pull the new image, recreate the container, and keep the existing Docker volume.
 
 ## Project Structure
 
@@ -256,7 +255,7 @@ src/
 data/
   openshelf.db        # Created automatically at runtime
 Dockerfile
-docker-compose.yml
+.github/workflows/docker-publish.yml
 ROADMAP.md
 ARCHITECTURE.md
 ```
@@ -291,7 +290,7 @@ The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It 
 ## Troubleshooting
 
 - Startup fails with `OPENSHELF_PASSWORD must be set before starting OpenShelf.`  
-  Set `OPENSHELF_PASSWORD` in your environment or `.env`.
+  Set `OPENSHELF_PASSWORD` in your shell environment or prefix the startup command with it, for example `OPENSHELF_PASSWORD=changeme bun run dev:server`.
 
 - I get logged out after a restart.  
   This is expected in the current implementation. The session signing secret is generated at process startup, so restarts invalidate old cookies.

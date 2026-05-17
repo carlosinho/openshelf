@@ -16,6 +16,12 @@ Bun + Hono server
     +--> static frontend assets from dist/ outside development mode
 ```
 
+Production packaging:
+
+- The official install artifact is a single Docker image published to Docker Hub as `carlosinho/openshelf`.
+- The container listens on port `3000`.
+- Persistent app data lives under `/app/data`, which maps to the SQLite path `data/openshelf.db` inside the process.
+
 Absent by design right now:
 
 - No SSR.
@@ -292,7 +298,7 @@ Security boundary:
 ## Security Considerations
 
 - The backup endpoint returns the full SQLite database and should be treated as highly sensitive.
-- The `.env` file is gitignored, but secret handling is otherwise simple and local.
+- Secret handling is otherwise simple and local through process environment variables.
 - `POST /api/items` makes a server-side `fetch()` to operator-supplied URLs when trying to discover a title. In a single-user trusted deployment this is usually acceptable, but it does mean authenticated users can trigger outbound requests from the server to arbitrary URLs.
 - `POST /api/items/check-urls` also makes server-side requests to operator-supplied URLs. The checker is intentionally best-effort and uses simple heuristics, including special handling for obvious Cloudflare challenge pages.
 - `sameSite: 'Lax'` helps with cookie scope, but there is no dedicated CSRF token mechanism.
@@ -311,6 +317,7 @@ Security boundary:
 
 - There is no automated test suite or test runner configured in `package.json`.
 - There is no lint script in `package.json`.
+- The repository includes a GitHub Actions workflow that publishes the Docker image to Docker Hub from the default branch and version tags.
 - TypeScript runs with `strict: true`.
 - The frontend and backend share types by direct import, which is simple but couples server code to `src/`.
 - Schema creation lives inline in `server/db.ts`; future schema changes will need manual migration work because no migration system exists yet.
