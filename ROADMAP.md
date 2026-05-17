@@ -2,20 +2,20 @@
 
 ## Status
 
-- v0.30 - initial post-pivot version - stand-alone web app meant to be self hosted for single user and let them manage their links of things to read later - with persistant database in SQLite
-- v0.40 - cleaner UI for daily use
-- v0.50 - new branding
-- v0.60 - code refactor
-- v0.70 - read/archived controls, mobile improvements, shelves
-- v0.80 - better imports and welcome features
+- v0.3.0 - initial post-pivot version - stand-alone web app meant to be self hosted for single user and let them manage their links of things to read later - with persistant database in SQLite
+- v0.4.0 - cleaner UI for daily use
+- v0.5.0 - new branding
+- v0.6.0 - code refactor
+- v0.7.0 - read/archived controls, mobile improvements, shelves
+- v0.8.0 - better imports and welcome features
 
 > OpenShelf has pivoted from a browser-only CSV processor into a self-hosted, single-user read-later manager. The current build now has a Bun + Hono backend, SQLite persistence, password protection, CSV import, shelves, filtering, cleanup, manual add-link flow, CSV export, and raw database backup download. Current focus should move to hardening, UX cleanup, and product-shape improvements on top of the new persistent foundation.
 
 ## Roadmap
 
-Versions prior to v0.30 considered legacy.
+Versions prior to v0.3.0 considered legacy.
 
-### v0.30 - Self-hosted backend pivot
+### v0.3.0 - Self-hosted backend pivot
 - [x] Optional local persistence - resolved in favor of a self-hosted SQLite-backed app
 - [x] Bun runtime adopted for app server and local-first deployment
 - [x] Hono API added for auth, items, import, export, and backup routes
@@ -24,7 +24,7 @@ Versions prior to v0.30 considered legacy.
 - [x] Frontend switched from ephemeral in-memory mutations to API-backed persistence
 - [x] Docker and bare-metal Bun startup paths documented
 
-### v0.40 - UX cleanup and product-shape
+### v0.4.0 - UX cleanup and product-shape
 - [x] Import UI should be present in the main library view so users can merge more CSV exports after the first setup flow. Right now, the CSV import is only visible if the user hasn't ever imported anything.
 - [x] Adding links improvements. The add-link panel now submits on Enter and focuses the URL field immediately after opening.
 - [x] Update to how all/unread/archive filtering is done.
@@ -38,20 +38,20 @@ Versions prior to v0.30 considered legacy.
     - Display the platform's icon next to the item in the main list - minimal black and white icon. Icon to the left of title.
 - [x] Move those platform icons - Twitter, Reddit, GitHub - that are on the main list to be in the status column instead.
 
-### v0.50 - Name change
+### v0.5.0 - Name change
 - [x] Rebrand with a new name.
     - The new name is OpenShelf.
     - Change all visible references of PocketZen to OpenShelf.
     - Change the logo. The new logo file is in public - nookio-side.png
 
-### v0.60 - Refactor
+### v0.6.0 - Refactor
 - [x] Refactor DataDisplay.tsx - it's too big.
     - Refactor the file but don't change any of the features
     - See if we can break off parts of it to other files
 - [x] Improve Twitter and Reddit link fetches.
     - The app couldn't get titles for tweets and Reddit pages.
 
-### v0.70 - Read/archived controls, mobile, shelves
+### v0.7.0 - Read/archived controls, mobile, shelves
 - [x] Do some actual controls for marking items read (aka. adding them to archive).
 - [x] Improve mobile.
 - [x] Shelves
@@ -64,7 +64,7 @@ Versions prior to v0.30 considered legacy.
     - Adding to shelf should also be possible when selecting multiple items from the list - from that selection box that appears which now lets the user to export, archive, delete.
     - Shelf selection should be added to the filters menu, below "Platforms".
 
-### v0.80 - Better imports and welcome features
+### v0.8.0 - Better imports and welcome features
 - [x] URL normalization during import.
     - CSV import now uses the same basic URL normalization as manual link adding before dedupe/import.
     - This does not remove tracking parameters or resolve redirect-equivalent URLs.
@@ -89,7 +89,7 @@ Versions prior to v0.30 considered legacy.
 - [x] Date filter presets.
     - New filter views for `added this week`, `1-6 months old`, `older than 1 year`.
 
-### v0.86 - Bug squashing
+### v0.8.6 - Bug squashing
 - [x] Possible bug: there's no timeout for link title fetching. Can the entire app stall if some title fetching takes a minute?
 - [x] Central API error handler.
     - `server/index.ts` now has a central Hono `onError` fallback for uncaught API failures.
@@ -100,13 +100,13 @@ Versions prior to v0.30 considered legacy.
     - The image now includes a healthcheck, and the repository now includes a GitHub Actions workflow that publishes Docker images only for version tags such as `v0.1.0`.
     - `latest` now tracks the most recently published tagged release instead of every push to `main`.
 
-### v0.90 - API, selfbrand
+### v0.9.0 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
 - [ ] Make it possible for users to make their own instance of OpenShelf fit their brand
     - Option to upload their own logo.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
 
-### v0.100 - Advanced imports and bulk actions
+### v1.0.0 - Advanced imports and bulk actions
 - [ ] Import mapping wizard for unknown CSVs
     - This is for importing generic “URL/title/date” CSVs.
     - Let the user map columns like `url`, `title`, `created_at`, `tags`, `status` instead of rejecting the file. This would make OpenShelf usable for random old exports and hand-built spreadsheets.
