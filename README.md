@@ -246,7 +246,7 @@ src/
   lib/api.ts          # Browser API client
   lib/domain.ts       # Root-domain parsing shared by client and server
   components/
-    FileUpload.tsx    # Reusable CSV import UI for onboarding and later merges
+    FileUpload.tsx    # Reusable CSV import UI used by the import dialog
     LoginForm.tsx     # Password unlock screen
     DataDisplay.tsx   # Main library orchestrator for state, derived data, and actions
     data-display/

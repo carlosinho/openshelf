@@ -50,7 +50,7 @@ Absent by design right now:
 - The browser normally loads the full library with `GET /api/items` and then applies status selection, search, platform filters, shelf filters, custom date filters, built-in date filter presets, homepage-only and problem-only filters, sorting, pagination, and browser-side CSV export locally.
 - The main list view defaults to unread-only. Two header checkboxes control status selection: unread, archive, both, or neither.
 - Status selection is treated as the current list scope rather than as a counted filter badge inside the filter drawer.
-- The built-in CSV upload UI is shown on first run and remains available from the main library view for later merge imports.
+- CSV import is opened from the main library interface via the existing import dialog.
 - Manual add and CSV import both normalize URLs before dedupe checks.
 - The shared `PocketItem` type defines validation states `pending`, `checking`, `valid`, and `problem`, but the current implementation only persists final `valid` or `problem` values.
 
@@ -151,7 +151,7 @@ Important exception: the signing secret is generated in memory at startup with `
 
 ### CSV Import
 
-1. The empty-library screen renders `FileUpload`, and the main library view can reopen the same import UI later.
+1. The operator opens the import dialog from the main library interface.
 2. `useFileUpload` enforces `.csv`, maximum `10` files, and a nominal `50MB` per-file limit in the browser.
 3. The browser sends multipart form data to `POST /api/import` under the field name `files`.
 4. The server parses each file with Papa Parse, lowercases headers, validates source-specific required columns, normalizes URLs, and validates rows.
@@ -210,7 +210,7 @@ Important exception: canceling a validation run stops future batches, but alread
 
 ### Library Screen State
 
-- `empty database` -> onboarding/import screen
+- `empty database` -> main library screen plus welcome notice with guide link
 - `non-empty database` -> main library screen with import, add-link, filter, export, and cleanup controls
 
 ### Item State

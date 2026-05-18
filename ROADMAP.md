@@ -100,6 +100,12 @@ Versions prior to v0.3.0 considered legacy.
     - The image now includes a healthcheck, and the repository now includes a GitHub Actions workflow that publishes Docker images only for version tags such as `v0.1.0`.
     - `latest` now tracks the most recently published tagged release instead of every push to `main`.
 
+### v0.8.8 - Better welcome
+- [x] Improve welcome screen.
+    - Removed the dedicated empty-library "Get Started" screen.
+    - First login now opens the normal app interface right away, even when the library is empty.
+    - Empty libraries now show a small green welcome notice with a single link to the OpenShelf setup guide.
+
 ### v0.9.0 - API, selfbrand
 - [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
 - [ ] Make it possible for users to make their own instance of OpenShelf fit their brand

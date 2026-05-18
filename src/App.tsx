@@ -4,10 +4,8 @@ import { Navbar } from './components/Navbar'
 import { KarolBadge } from './components/KarolBadge'
 import { KarolFooter } from './components/KarolFooter'
 import { LoginForm } from './components/LoginForm'
-import { ImportDialog } from './components/data-display/ImportDialog'
 import { PocketItem, Shelf } from './types/pocket'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './components/ui/accordion'
-import { Database, Download, ShieldCheck, Upload } from 'lucide-react'
+import { Database, Download, ExternalLink } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { ApiError, checkAuth, fetchItems, fetchShelves, login, logout } from './lib/api'
 
@@ -17,7 +15,6 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
-  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
 
   const handleDataParsed = (items: PocketItem[]) => {
     setData(items)
@@ -93,55 +90,29 @@ function App() {
             </div>
           ) : !isAuthenticated ? (
             <LoginForm onSubmit={handleLogin} error={authError} />
-          ) : !hasLibraryContent ? (
-            <div className="bg-card">
-              <div className="mb-6">
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="privacy" className="border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
-                    <AccordionTrigger className="py-3 text-green-800 dark:text-green-200 hover:bg-green-100 dark:hover:bg-green-800/30">
-                      <span className="flex items-center gap-3">
-                        <ShieldCheck
-                          size={16}
-                          className="shrink-0 opacity-80"
-                          aria-hidden="true"
-                        />
-                        <span>This self-hosted app stores your data on this OpenShelf instance only.</span>
-                      </span>
-                    </AccordionTrigger>
-                    <AccordionContent className="text-green-800 dark:text-green-200 ps-7 pb-3">
-                      <div className="space-y-1 text-sm opacity-90">
-                        <div className="font-medium mb-2">Instance-local storage:</div>
-                        <div>• Links persist in a local SQLite database on this server</div>
-                        <div>• Access is protected by the configured instance password</div>
-                        <div>• No user accounts or external services are required</div>
-                        <div className="mt-2 text-sm italic">
-                          Back up your library any time by downloading the database file from inside the app.
-                        </div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </div>
-              <h2 className="text-2xl font-semibold mb-4">
-                Get Started
-              </h2>
-              <p className="text-muted-foreground mb-6">
-                Start your library by importing links from Pocket today. Other read-later app
-                importers are staged in the import dialog and marked as coming soon.
-              </p>
-
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <Button onClick={() => setIsImportDialogOpen(true)} className="gap-2">
-                  <Upload className="size-4" />
-                  Import links
-                </Button>
-                <Button variant="outline" onClick={handleLogout}>
-                  Log out
-                </Button>
-              </div>
-            </div>
           ) : (
             <div className="space-y-6">
+              {!hasLibraryContent && (
+                <div className="rounded-md border border-green-200 bg-green-50 px-4 py-3 shadow-sm">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium text-green-800">Welcome to OpenShelf.</div>
+                      <div className="mt-1 text-xs text-green-700">
+                      Hi there 👋. Thanks for checking out OpenShelf! I put together a quick guide to help you get started and make the most of your reading list with OpenShelf.
+                      </div>
+                    </div>
+                    <a
+                      href="https://github.com/carlosinho/openshelf/wiki"
+                      target="_blank"
+                      rel="noopener"
+                      className="inline-flex h-9 shrink-0 items-center justify-center rounded-md border border-green-300 bg-white px-3 text-sm font-medium text-green-800 transition-colors hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      Read the Guide
+                      <ExternalLink className="ml-2 size-4" aria-hidden="true" />
+                    </a>
+                  </div>
+                </div>
+              )}
               <div className="bg-card">
                 <DataDisplay data={data} shelves={shelves} onRefresh={refetchLibrary} />
               </div>
@@ -170,21 +141,12 @@ function App() {
         </div>
       )}
 
-      {isAuthenticated && !hasLibraryContent && isImportDialogOpen ? (
-        <ImportDialog
-          onClose={() => setIsImportDialogOpen(false)}
-          onImportComplete={async () => {
-            await refetchLibrary()
-          }}
-        />
-      ) : null}
-      
       {/* Footer */}
-      <KarolFooter version="ver 0.8.7" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
-      
+      <KarolFooter version="ver 0.8.8" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
+
       {/* Karol Badge - floating face 
       <KarolBadge />*/}
-      
+
     </div>
   )
 }
