@@ -107,9 +107,18 @@ Versions prior to v0.3.0 considered legacy.
     - Empty libraries now show a small green welcome notice with a single link to the OpenShelf setup guide.
 
 ### v0.9.0 - API, selfbrand
-- [ ] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
+- [x] Add API access to make it possible to add links to the user's list remotely from other tools - like Raycast, Alfred, or other web calls.
+    - The scope of this task is to create working endpoints that the user can call to add links to their list.
+    - A user should be able to generate an API key (also revoke and regenerate it).
+    - Authentication when doing the API call should be done with the API key.
+    - Right now, only one action should be available - adding a link to unread.
+- [ ] App logs
+    - Log all significant actions being taken in the app.
+    - This should include: all actions being done on links - adding, archiving, unarchiving, deleting, shelf creation, adding/removing from shelf, import being done (with numbers of imported), export, remote API calls done.
+    - Don't document anything that deals just with interacting with the UI - like using filters, search, checking URLs.
+    - Let's keep the logs in the database, make it viewable in the actions menu, with an option to wipe, or to "delete entries older than 6 months".
 - [ ] Make it possible for users to make their own instance of OpenShelf fit their brand
-    - Option to upload their own logo.
+    - Option to upload their own logo. Upload to the server normally. Don't keep the logo in the database. 
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
 
 ### v1.0.0 - Advanced imports and bulk actions

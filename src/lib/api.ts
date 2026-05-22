@@ -193,3 +193,23 @@ export async function removeDomainFromShelf(shelfId: number, domain: string) {
     }
   )
 }
+
+export type ApiKeyStatus =
+  | { configured: false }
+  | { configured: true; api_key: string; created_at: number }
+
+export async function fetchApiKeyStatus() {
+  return apiRequest<ApiKeyStatus>('/api/api-key')
+}
+
+export async function generateApiKey() {
+  return apiRequest<Extract<ApiKeyStatus, { configured: true }>>('/api/api-key', {
+    method: 'POST',
+  })
+}
+
+export async function revokeApiKey() {
+  return apiRequest<{ configured: false }>('/api/api-key', {
+    method: 'DELETE',
+  })
+}

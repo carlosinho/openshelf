@@ -31,7 +31,7 @@ It is not a hosted sync service, social bookmarking platform, team knowledge bas
 
 - Run a private read-later library as a small self-hosted web app.
 - Store the library in `data/openshelf.db`.
-- Add links manually.
+- Add links manually or remotely via API key (Raycast, Alfred, curl, etc.).
 - Archive, unarchive, delete links.
 - Import compatible CSV files.
 - Organize links into shelves.
@@ -203,7 +203,7 @@ Run the API server:
 
 ```bash
 bun install
-OPENSHELF_PASSWORD=changeme bun run dev:server
+OPENSHELF_PASSWORD=password-you-want-to-set bun run dev:server
 ```
 
 Run the frontend dev server in another terminal:
@@ -235,10 +235,14 @@ The webpack dev server proxies `/api/*` to `http://localhost:3000`.
 server/
   index.ts            # Bun entry point, route mounting, central API error fallback
   auth.ts             # Password auth and signed session cookie handling
+  api-key.ts          # API key generation and Bearer auth middleware
+  create-item.ts      # Shared manual/API link creation and title fetching
   db.ts               # SQLite schema, queries, and backup serialization
   csv.ts              # CSV validation, parsing, merge, and export helpers
   routes/
     items.ts          # List, create, patch, URL-check, delete, bulk-delete, clear-archived
+    v1.ts             # API-key-authenticated remote link adding
+    api-key.ts        # API key status, generate, and revoke (session auth)
     shelves.ts        # Shelf CRUD, item assignment, and domain-rule routes
     import.ts         # CSV import, server-side CSV export, SQLite backup
 src/
@@ -270,6 +274,10 @@ ARCHITECTURE.md
 | `GET` | `/api/auth/check` | Verify current session. |
 | `GET` | `/api/items` | Return all saved items. |
 | `POST` | `/api/items` | Add one URL. Manual adds normalize the URL and default to `unread`. |
+| `POST` | `/api/v1/items` | Add one unread URL remotely. Requires `Authorization: Bearer <api_key>`. Uses the same title fetching as manual adds. |
+| `GET` | `/api/api-key` | Return whether an API key exists (session auth). Includes the key so you can view or copy it again from the UI. |
+| `POST` | `/api/api-key` | Generate or regenerate the instance API key (session auth). |
+| `DELETE` | `/api/api-key` | Revoke the API key (session auth). |
 | `POST` | `/api/items/check-urls` | Check up to 10 unread item URLs server-side and persist `validation_status`. |
 | `PATCH` | `/api/items/:id` | Update fields such as `status`, `title`, `tags`, or validation metadata. |
 | `DELETE` | `/api/items/:id` | Delete one item. |
@@ -286,6 +294,19 @@ ARCHITECTURE.md
 | `GET` | `/api/backup` | Download a raw SQLite backup. |
 
 The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`.
+
+## Using the API with curl
+
+Open the app, go to **Actions → API access**, and generate an API key. You can show, copy, regenerate, or revoke it there.
+
+To add a link from the command line, call `POST /api/v1/items` with your instance URL and API key:
+
+```bash
+curl -sS -X POST 'http://YOUR_OPENSHELF.com:PORT/api/v1/items' \
+  -H 'Authorization: Bearer YOUR_API_KEY' \
+  -H 'Content-Type: application/json' \
+  -d '{"url":"https://example.com/article"}'
+```
 
 ## Troubleshooting
 

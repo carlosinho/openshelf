@@ -1,241 +1,19 @@
 import { Hono } from 'hono'
 import {
-  addItem,
   deleteByStatus,
   deleteItems,
   getAllItems,
   getItemsForValidation,
-  getItemByUrl,
   updateItemsValidation,
   updateItem,
   type ItemStatus,
   type UpdateItemInput,
 } from '../db'
-import { normalizeUrl } from '../url'
+import { CreateItemError, createItemFromUrl } from '../create-item'
+import { OPENSHELF_URL_CHECK_USER_AGENT } from '../http-user-agent'
 
-const TWITTER_TITLE_MAX_LENGTH = 70
-const REDDIT_REQUEST_USER_AGENT = 'OpenShelf/0.50 (+self-hosted read-later app)'
-const URL_CHECK_REQUEST_USER_AGENT = 'OpenShelf/0.80 URL checker (+self-hosted read-later app)'
 const URL_CHECK_TIMEOUT_MS = 8000
-const TITLE_FETCH_TIMEOUT_MS = URL_CHECK_TIMEOUT_MS
 const URL_CHECK_BATCH_LIMIT = 10
-
-function extractFirstMatch(html: string, patterns: RegExp[]) {
-  for (const pattern of patterns) {
-    const match = html.match(pattern)
-    if (match?.[1]) {
-      return match[1]
-    }
-  }
-
-  return null
-}
-
-function decodeHtmlEntities(value: string) {
-  const namedEntities: Record<string, string> = {
-    amp: '&',
-    lt: '<',
-    gt: '>',
-    quot: '"',
-    apos: "'",
-    nbsp: ' ',
-  }
-
-  return value.replace(/&(#\d+|#x[0-9a-f]+|[a-z]+);/gi, (entity, code) => {
-    const normalizedCode = String(code).toLowerCase()
-
-    if (normalizedCode.startsWith('#x')) {
-      const parsed = Number.parseInt(normalizedCode.slice(2), 16)
-      return Number.isNaN(parsed) ? entity : String.fromCodePoint(parsed)
-    }
-
-    if (normalizedCode.startsWith('#')) {
-      const parsed = Number.parseInt(normalizedCode.slice(1), 10)
-      return Number.isNaN(parsed) ? entity : String.fromCodePoint(parsed)
-    }
-
-    return namedEntities[normalizedCode] ?? entity
-  })
-}
-
-function normalizeText(value: string) {
-  return decodeHtmlEntities(value).replace(/\s+/g, ' ').trim()
-}
-
-function stripHtmlTags(value: string) {
-  return value.replace(/<[^>]+>/g, ' ')
-}
-
-function truncateText(value: string, maxLength: number) {
-  if (value.length <= maxLength) {
-    return value
-  }
-
-  return `${value.slice(0, maxLength - 3).trimEnd()}...`
-}
-
-function extractTitle(html: string) {
-  const rawTitle = extractFirstMatch(html, [
-    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-    /<meta[^>]+name=["']twitter:title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-    /<meta[^>]+name=["']title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
-    /<title[^>]*>([^<]+)<\/title>/i,
-  ])
-
-  if (!rawTitle) {
-    return null
-  }
-
-  const title = normalizeText(rawTitle)
-  return title || null
-}
-
-function isTwitterStatusUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url)
-    const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '')
-
-    return (hostname === 'twitter.com' || hostname === 'x.com') && /\/status\/\d+/i.test(parsedUrl.pathname)
-  } catch {
-    return false
-  }
-}
-
-function isRedditUrl(url: string) {
-  try {
-    const parsedUrl = new URL(url)
-    const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '')
-
-    return hostname === 'reddit.com' || hostname.endsWith('.reddit.com')
-  } catch {
-    return false
-  }
-}
-
-function getTwitterOEmbedUrl(url: string) {
-  const parsedUrl = new URL(url)
-  const lookupUrl = new URL(parsedUrl.toString())
-  lookupUrl.hostname = 'twitter.com'
-
-  return `https://publish.twitter.com/oembed?omit_script=1&url=${encodeURIComponent(lookupUrl.toString())}`
-}
-
-function getRedditOEmbedUrl(url: string) {
-  const parsedUrl = new URL(url)
-  const lookupUrl = new URL(parsedUrl.toString())
-  lookupUrl.hostname = 'www.reddit.com'
-
-  return `https://www.reddit.com/oembed?url=${encodeURIComponent(lookupUrl.toString())}`
-}
-
-function extractTwitterStatusTitleFromEmbedHtml(html: string) {
-  const rawTweetHtml = extractFirstMatch(html, [/<p\b[^>]*>([\s\S]*?)<\/p>/i])
-
-  if (!rawTweetHtml) {
-    return null
-  }
-
-  const tweetText = normalizeText(stripHtmlTags(rawTweetHtml))
-  if (!tweetText) {
-    return null
-  }
-
-  return truncateText(tweetText, TWITTER_TITLE_MAX_LENGTH)
-}
-
-async function fetchTwitterStatusTitle(url: string) {
-  try {
-    return await fetchTitleWithTimeout(getTwitterOEmbedUrl(url), async (response) => {
-      if (!response.ok) {
-        return null
-      }
-
-      const payload = (await response.json()) as { html?: string }
-      if (!payload.html) {
-        return null
-      }
-
-      return extractTwitterStatusTitleFromEmbedHtml(payload.html)
-    })
-  } catch {
-    return null
-  }
-}
-
-async function fetchRedditTitle(url: string) {
-  try {
-    return await fetchTitleWithTimeout(
-      getRedditOEmbedUrl(url),
-      async (response) => {
-        if (!response.ok) {
-          return null
-        }
-
-        const payload = (await response.json()) as { title?: string }
-        const title = payload.title ? normalizeText(payload.title) : ''
-        return title || null
-      },
-      {
-        headers: {
-          'User-Agent': REDDIT_REQUEST_USER_AGENT,
-        },
-      }
-    )
-  } catch {
-    return null
-  }
-}
-
-async function fetchTitleWithTimeout<T>(
-  url: string,
-  readResponse: (response: Response) => Promise<T>,
-  init: RequestInit = {}
-) {
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => {
-    controller.abort()
-  }, TITLE_FETCH_TIMEOUT_MS)
-
-  try {
-    const response = await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    })
-
-    return await readResponse(response)
-  } finally {
-    clearTimeout(timeoutId)
-  }
-}
-
-async function fetchPageTitle(url: string) {
-  try {
-    if (isTwitterStatusUrl(url)) {
-      const twitterTitle = await fetchTwitterStatusTitle(url)
-      if (twitterTitle) {
-        return twitterTitle
-      }
-    }
-
-    if (isRedditUrl(url)) {
-      const redditTitle = await fetchRedditTitle(url)
-      if (redditTitle) {
-        return redditTitle
-      }
-    }
-
-    return await fetchTitleWithTimeout(url, async (response) => {
-      if (!response.ok) {
-        return null
-      }
-
-      const html = await response.text()
-      return extractTitle(html)
-    })
-  } catch {
-    return null
-  }
-}
 
 function isValidUrlCheckStatus(status: number) {
   return status === 401 || status === 405 || status === 429
@@ -284,7 +62,7 @@ async function fetchWithTimeout(url: string, method: 'GET' | 'HEAD') {
       redirect: 'follow',
       signal: controller.signal,
       headers: {
-        'User-Agent': URL_CHECK_REQUEST_USER_AGENT,
+        'User-Agent': OPENSHELF_URL_CHECK_USER_AGENT,
       },
     })
   } finally {
@@ -339,31 +117,22 @@ itemsRoutes.get('/', (c) => {
 itemsRoutes.post('/', async (c) => {
   const body = await c.req.json<{ url?: string; title?: string; tags?: string; status?: ItemStatus }>()
 
-  if (!body.url?.trim()) {
-    return c.json({ error: 'URL is required.' }, 400)
-  }
-
-  let normalizedUrl: string
-
   try {
-    normalizedUrl = normalizeUrl(body.url.trim())
-  } catch {
-    return c.json({ error: 'Please provide a valid URL.' }, 400)
+    const item = await createItemFromUrl({
+      url: body.url ?? '',
+      title: body.title,
+      tags: body.tags,
+      status: body.status,
+    })
+
+    return c.json(item, 201)
+  } catch (error) {
+    if (error instanceof CreateItemError) {
+      return c.json({ error: error.message }, error.status)
+    }
+
+    throw error
   }
-
-  if (getItemByUrl(normalizedUrl)) {
-    return c.json({ error: 'This URL is already in your list.' }, 409)
-  }
-
-  const fetchedTitle = body.title?.trim() || (await fetchPageTitle(normalizedUrl)) || normalizedUrl
-  const item = addItem({
-    title: fetchedTitle,
-    url: normalizedUrl,
-    tags: body.tags?.trim() ?? '',
-    status: body.status ?? 'unread',
-  })
-
-  return c.json(item, 201)
 })
 
 itemsRoutes.delete('/:id', (c) => {

@@ -31,6 +31,7 @@ import { DataDisplayHeaderActions } from './data-display/DataDisplayHeaderAction
 import { DataDisplayHeaderPanels } from './data-display/DataDisplayHeaderPanels'
 import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeaderStatusFilters'
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
+import { ApiKeyDialog } from './data-display/ApiKeyDialog'
 import { ImportDialog } from './data-display/ImportDialog'
 import { DataDisplayListControls } from './data-display/DataDisplayListControls'
 import { DataDisplayPagination } from './data-display/DataDisplayPagination'
@@ -132,6 +133,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const [isActionsOpen, setIsActionsOpen] = useState(false)
   const [shelfAssignmentState, setShelfAssignmentState] = useState<ShelfAssignmentState | null>(null)
   const [isShelfManagerOpen, setIsShelfManagerOpen] = useState(false)
+  const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   const addLinkInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -815,6 +817,10 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
               setIsShelfManagerOpen(true)
               setIsActionsOpen(false)
             }}
+            onOpenApiKeyDialog={() => {
+              setIsApiKeyDialogOpen(true)
+              setIsActionsOpen(false)
+            }}
             onStartValidation={() => {
               void handleStartValidation()
               setIsActionsOpen(false)
@@ -856,6 +862,8 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
           onDismiss={() => setImportSummary(null)}
         />
       )}
+
+      {isApiKeyDialogOpen ? <ApiKeyDialog onClose={() => setIsApiKeyDialogOpen(false)} /> : null}
 
       {isImportDialogOpen ? (
         <ImportDialog

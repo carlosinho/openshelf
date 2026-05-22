@@ -3,9 +3,11 @@ import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { authRoutes, initializeAuth, requireAuth } from './auth'
 import { getItemCount } from './db'
+import { apiKeyRoutes } from './routes/api-key'
 import { importRoutes } from './routes/import'
 import { itemsRoutes } from './routes/items'
 import { shelvesRoutes } from './routes/shelves'
+import { v1Routes } from './routes/v1'
 
 await initializeAuth()
 
@@ -50,7 +52,9 @@ app.get('/api/health', (c) => {
 })
 
 app.route('/api/auth', authRoutes)
+app.route('/api/v1', v1Routes)
 app.use('/api/*', requireAuth)
+app.route('/api/api-key', apiKeyRoutes)
 app.route('/api/items', itemsRoutes)
 app.route('/api/shelves', shelvesRoutes)
 app.route('/api', importRoutes)

@@ -8,6 +8,7 @@ import { PocketItem, Shelf } from './types/pocket'
 import { Database, Download, ExternalLink } from 'lucide-react'
 import { Button } from './components/ui/button'
 import { ApiError, checkAuth, fetchItems, fetchShelves, login, logout } from './lib/api'
+import packageJson from '../package.json'
 
 function App() {
   const [data, setData] = useState<PocketItem[]>([])
@@ -142,7 +143,7 @@ function App() {
       )}
 
       {/* Footer */}
-      <KarolFooter version="ver 0.8.8" className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
+      <KarolFooter version={`ver ${packageJson.version}`} className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
 
       {/* Karol Badge - floating face 
       <KarolBadge />*/}

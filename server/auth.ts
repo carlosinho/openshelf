@@ -49,7 +49,11 @@ export async function initializeAuth() {
 }
 
 export const requireAuth = createMiddleware(async (c, next) => {
-  if (c.req.path === '/api/auth/login' || c.req.path === '/api/health') {
+  if (
+    c.req.path === '/api/auth/login' ||
+    c.req.path === '/api/health' ||
+    c.req.path.startsWith('/api/v1/')
+  ) {
     await next()
     return
   }

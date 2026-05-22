@@ -46,7 +46,7 @@ Absent by design right now:
 - Shelves are separate entities that group items through explicit memberships and root-domain rules.
 - `items.url` is globally unique inside one OpenShelf instance.
 - Auth is instance-wide. There are no users, roles, or per-item ownership rules.
-- All `/api/*` routes require auth except `/api/health` and `/api/auth/login`.
+- All `/api/*` routes require session auth except `/api/health`, `/api/auth/login`, and `/api/v1/*` (which use a Bearer API key instead).
 - The browser normally loads the full library with `GET /api/items` and then applies status selection, search, platform filters, shelf filters, custom date filters, built-in date filter presets, homepage-only and problem-only filters, sorting, pagination, and browser-side CSV export locally.
 - The main list view defaults to unread-only. Two header checkboxes control status selection: unread, archive, both, or neither.
 - Status selection is treated as the current list scope rather than as a counted filter badge inside the filter drawer.
@@ -129,6 +129,14 @@ There is also a shared `Shelf` type used by both the client and server:
 | `domain` | `TEXT NOT NULL` | Root domain such as `example.com` or `example.co.uk`. |
 | `created_at` | `INTEGER NOT NULL` | Tracks when the rule was added. |
 
+### `api_keys` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `id` | `INTEGER PRIMARY KEY CHECK (id = 1)` | Singleton row for the one instance API key. |
+| `api_key` | `TEXT NOT NULL` | Stored API key used for Bearer auth and UI reveal/copy. |
+| `created_at` | `INTEGER NOT NULL` | When the current key was generated or last regenerated. |
+
 Why the schema is still small:
 
 - There is no user model because the auth model is one shared password from the environment.
@@ -175,10 +183,11 @@ This flow is intentionally tolerant: valid rows are imported even if other rows 
 9. The server sets `archived_at` when an item moves to `archive` and clears it when the item moves back to `unread`.
 10. Clear archived deletes every row whose `status` is `archive`.
 11. Manual add posts a URL to `POST /api/items`.
-12. The server normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
-13. The filter drawer includes the existing custom date filter UI plus a `Date filter presets` section for `Added this week`, `1-6 months old`, and `Older than 1 year`.
-14. If the library contains saved problem URLs, the filter drawer shows an `Only problematic` toggle alongside `Only homepages`.
-15. After every mutation, the frontend refetches the full library and shelf list rather than patching local state incrementally.
+12. Remote add posts a URL to `POST /api/v1/items` with `Authorization: Bearer <api_key>`, always creating an unread item.
+13. Both paths call the shared `createItemFromUrl()` helper in `server/create-item.ts`, which normalizes the URL, rejects duplicates, tries to fetch a page title, and falls back to the normalized URL if title fetch fails.
+14. The filter drawer includes the existing custom date filter UI plus a `Date filter presets` section for `Added this week`, `1-6 months old`, and `Older than 1 year`.
+15. If the library contains saved problem URLs, the filter drawer shows an `Only problematic` toggle alongside `Only homepages`.
+16. After every mutation, the frontend refetches the full library and shelf list rather than patching local state incrementally.
 
 ### URL Validation
 
@@ -236,7 +245,11 @@ Important exception: canceling a validation run stops future batches, but alread
 
 - `server/index.ts`: app assembly, health route, central API error handling, auth mount, auth middleware, static serving, and Bun startup
 - `server/auth.ts`: password login, logout, auth check, signed-cookie middleware
+- `server/api-key.ts`: API key generation, Bearer verification, and `requireApiKey` middleware
+- `server/create-item.ts`: shared URL normalization, title fetching, and item insert for manual and API adds
 - `server/routes/items.ts`: list/create/delete/url-check/bulk-delete/clear-archived/patch
+- `server/routes/v1.ts`: API-key-authenticated `POST /api/v1/items`
+- `server/routes/api-key.ts`: session-authenticated API key status, generate/regenerate, revoke
 - `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
 - `server/routes/import.ts`: import/export/backup
 - `server/db.ts`: schema plus direct query helpers
@@ -246,6 +259,8 @@ Important exception: canceling a validation run stops future batches, but alread
 
 - Auth: `/api/auth/login`, `/api/auth/logout`, `/api/auth/check`
 - Health: `/api/health`
+- Remote add: `/api/v1/items` (Bearer API key)
+- API key admin: `/api/api-key` (session cookie)
 - Library: `/api/items`, `/api/items/check-urls`, `/api/items/:id`, `/api/items/bulk-delete`, `/api/items/clear-archived`
 - Shelves: `/api/shelves`, `/api/shelves/:id`, `/api/shelves/:id/items`, `/api/shelves/:id/domains`
 - Import/egress: `/api/import`, `/api/export`, `/api/backup`
@@ -260,6 +275,8 @@ Important exception: canceling a validation run stops future batches, but alread
 
 - Password source: `OPENSHELF_PASSWORD`
 - Verification: `Bun.password.verify()`
+- Remote API key: one optional key per instance, stored in SQLite `api_keys`, managed from Actions → API access
+- Remote verification: `Authorization: Bearer <api_key>` with timing-safe comparison
 - Cookie name: `openshelf_session`
 - Cookie properties: `httpOnly`, `sameSite: 'Lax'`, `path: '/'`, `maxAge: 30 days`
 - Cookie `secure` flag: enabled only when `NODE_ENV === 'production'`
@@ -267,7 +284,8 @@ Important exception: canceling a validation run stops future batches, but alread
 
 Security boundary:
 
-- Anyone with the shared password has full access to the whole instance, including database backup download and destructive delete operations.
+- Anyone with the shared password has full access to the whole instance, including database backup download, API key viewing/regeneration, and destructive delete operations.
+- Anyone with the API key can add unread links remotely via `POST /api/v1/items`, which triggers the same server-side title fetch behavior as manual adds.
 - There is no per-user scoping, no rate limiting, no brute-force protection, and no audit trail.
 
 ## Performance Decisions

@@ -117,6 +117,12 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_shelf_items_item_id ON shelf_items(item_id);
   CREATE INDEX IF NOT EXISTS idx_shelf_domain_rules_domain ON shelf_domain_rules(domain);
+
+  CREATE TABLE IF NOT EXISTS api_keys (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    api_key TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
 `)
 
 const baseSelect = `
@@ -674,6 +680,55 @@ export function deleteDomainRuleFromShelf(shelfId: number, domain: string): numb
     .run(shelfId, normalizedDomain) as { changes: number }
 
   return Number(result.changes ?? 0)
+}
+
+export interface ApiKeyRecord {
+  api_key: string
+  created_at: number
+}
+
+export function getApiKeyRecord(): ApiKeyRecord | null {
+  const row = db
+    .query(`SELECT api_key, created_at FROM api_keys WHERE id = 1`)
+    .get() as Record<string, unknown> | null
+
+  if (!row || typeof row.api_key !== 'string' || !row.api_key) {
+    return null
+  }
+
+  const createdAt = Number(row.created_at)
+  if (!Number.isInteger(createdAt)) {
+    return null
+  }
+
+  return {
+    api_key: row.api_key,
+    created_at: createdAt,
+  }
+}
+
+export function setApiKey(apiKey: string): ApiKeyRecord {
+  const createdAt = getCurrentTimestamp()
+
+  db.query(
+    `
+      INSERT INTO api_keys (id, api_key, created_at)
+      VALUES (1, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        api_key = excluded.api_key,
+        created_at = excluded.created_at
+    `
+  ).run(apiKey, createdAt)
+
+  return {
+    api_key: apiKey,
+    created_at: createdAt,
+  }
+}
+
+export function clearApiKey(): boolean {
+  const result = db.query(`DELETE FROM api_keys WHERE id = 1`).run() as { changes: number }
+  return Number(result.changes ?? 0) > 0
 }
 
 export function getItemCount(): number {
