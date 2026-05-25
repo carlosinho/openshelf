@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Copy, Eye, EyeOff, KeyRound, Loader2, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, Eye, EyeOff, KeyRound, Loader2, RefreshCw, Smartphone, Trash2 } from 'lucide-react'
 import {
   fetchApiKeyStatus,
   generateApiKey,
@@ -7,6 +7,12 @@ import {
   type ApiKeyStatus,
 } from '../../lib/api'
 import { Button } from '../ui/button'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '../ui/accordion'
 import { ShelfModal } from './ShelfModal'
 
 interface ApiKeyDialogProps {
@@ -125,6 +131,31 @@ export function ApiKeyDialog({ onClose }: ApiKeyDialogProps) {
     }
   }
 
+  const copyText = async (text: string, successMessage: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopyMessage(successMessage)
+    } catch {
+      setCopyMessage('Could not copy automatically.')
+    }
+  }
+
+  const handleCopyIosValues = async () => {
+    if (!status?.configured || !status.api_key) {
+      return
+    }
+
+    const origin = window.location.origin
+    const values = [
+      `OpenShelf URL: ${origin}`,
+      `POST URL: ${origin}/api/v1/items`,
+      `Authorization: Bearer ${status.api_key}`,
+      `Request body (replace URL with the shared link): {"url":"https://example.com/article"}`,
+    ].join('\n')
+
+    await copyText(values, 'iOS Shortcut values copied.')
+  }
+
   const maskedKey =
     status?.configured && status.api_key
       ? `${status.api_key.slice(0, 8)}${'•'.repeat(Math.max(status.api_key.length - 12, 8))}${status.api_key.slice(-4)}`
@@ -133,7 +164,7 @@ export function ApiKeyDialog({ onClose }: ApiKeyDialogProps) {
   return (
     <ShelfModal
       title="API access"
-      description="Add unread links remotely from Raycast, Alfred, curl, or other tools using an API key."
+      description="Add unread links remotely from Raycast, Alfred, curl, the iOS Share menu, or other tools using an API key."
       onClose={onClose}
     >
       {isLoading ? (
@@ -142,7 +173,7 @@ export function ApiKeyDialog({ onClose }: ApiKeyDialogProps) {
           Loading API key status...
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="max-h-[min(70vh,36rem)] space-y-4 overflow-y-auto pr-1">
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
           {copyMessage ? <p className="text-sm text-emerald-700">{copyMessage}</p> : null}
 
@@ -250,6 +281,94 @@ export function ApiKeyDialog({ onClose }: ApiKeyDialogProps) {
               </Button>
             ) : null}
           </div>
+
+          {status?.configured && status.api_key ? (
+            <Accordion type="single" collapsible className="rounded-lg border">
+              <AccordionItem value="ios-sharing" className="border-0">
+                <AccordionTrigger className="px-3 py-3 hover:bg-muted/50">
+                  <Smartphone className="size-4 shrink-0 opacity-70" aria-hidden="true" />
+                  Save from iPhone or iPad
+                </AccordionTrigger>
+                <AccordionContent className="space-y-3 px-3 pb-3">
+                  <p className="text-xs text-muted-foreground">
+                    Set this up in Safari on your phone so the URL below matches your OpenShelf instance (
+                    <code className="rounded bg-muted px-1">{window.location.origin}</code>).
+                  </p>
+                  <ol className="list-decimal space-y-2.5 pl-4 text-xs text-muted-foreground">
+                    <li>
+                      Open the <strong className="font-medium text-foreground">Shortcuts</strong> app and create a new
+                      shortcut named something like &quot;Add to OpenShelf&quot;.
+                    </li>
+                    <li>
+                      Tap the <strong className="font-medium text-foreground">(i)</strong> icon at the bottom of the
+                      shortcut editor and turn on{' '}
+                      <strong className="font-medium text-foreground">Show in Share Sheet</strong>.
+                    </li>
+                    <li>
+                      Under share-sheet input, choose <strong className="font-medium text-foreground">URL</strong> as
+                      the accepted type.
+                    </li>
+                    <li>
+                      Add the action <strong className="font-medium text-foreground">Get URLs from Input</strong>.
+                    </li>
+                    <li>
+                      Add <strong className="font-medium text-foreground">Get Item from List</strong> →{' '}
+                      <strong className="font-medium text-foreground">First Item</strong> from{' '}
+                      <strong className="font-medium text-foreground">URLs</strong> so only one shared link is used.
+                    </li>
+                    <li>
+                      Add <strong className="font-medium text-foreground">Get Contents of URL</strong> and configure:
+                      <ul className="mt-1.5 list-disc space-y-1 pl-4">
+                        <li>
+                          <strong className="font-medium text-foreground">URL:</strong>{' '}
+                          <code className="break-all rounded bg-muted px-1">
+                            {window.location.origin}/api/v1/items
+                          </code>
+                        </li>
+                        <li>
+                          <strong className="font-medium text-foreground">Method:</strong> POST
+                        </li>
+                        <li>
+                          <strong className="font-medium text-foreground">Headers:</strong>{' '}
+                          <code className="rounded bg-muted px-1">Authorization</code> ={' '}
+                          <code className="break-all rounded bg-muted px-1">
+                            Bearer {isKeyVisible ? status.api_key : 'your_API_key'}
+                          </code>
+                        </li>
+                        <li>
+                          <strong className="font-medium text-foreground">Request body:</strong> JSON with field{' '}
+                          <code className="rounded bg-muted px-1">url</code> set to the{' '}
+                          <strong className="font-medium text-foreground">First Item</strong> variable from the list
+                          step.
+                        </li>
+                      </ul>
+                    </li>
+                    <li>
+                      Optional: add <strong className="font-medium text-foreground">Show Notification</strong> if you
+                      want confirmation after the link is sent.
+                    </li>
+                  </ol>
+                  <p className="text-xs text-muted-foreground">
+                    Share a page from Safari (or another app), pick your shortcut, and confirm the link appears as
+                    unread in OpenShelf. Use HTTPS on the public internet. If you regenerate or revoke the API key,
+                    update the shortcut&apos;s Authorization header.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      void handleCopyIosValues()
+                    }}
+                    className="gap-2"
+                  >
+                    <Copy className="size-4 opacity-60" aria-hidden="true" />
+                    Copy Shortcut values
+                  </Button>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          ) : null}
         </div>
       )}
     </ShelfModal>

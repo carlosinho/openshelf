@@ -112,14 +112,17 @@ Versions prior to v0.3.0 considered legacy.
     - A user should be able to generate an API key (also revoke and regenerate it).
     - Authentication when doing the API call should be done with the API key.
     - Right now, only one action should be available - adding a link to unread.
+- [x] iOS sharing.
+    - Uses the existing `POST /api/v1/items` API key flow via an iOS Shortcuts Share Sheet setup.
+    - No native app; distribution is in-app instructions only for now.
 - [ ] App logs
     - Log all significant actions being taken in the app.
     - This should include: all actions being done on links - adding, archiving, unarchiving, deleting, shelf creation, adding/removing from shelf, import being done (with numbers of imported), export, remote API calls done.
     - Don't document anything that deals just with interacting with the UI - like using filters, search, checking URLs.
     - Let's keep the logs in the database, make it viewable in the actions menu, with an option to wipe, or to "delete entries older than 6 months".
 - [ ] Make it possible for users to make their own instance of OpenShelf fit their brand
-    - Option to upload their own logo. Upload to the server normally. Don't keep the logo in the database. 
-    - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header.
+    - Option to upload their own logo / delete / replace.
+    - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header - it's all needed for some minimal self-branding.
 
 ### v1.0.0 - Advanced imports and bulk actions
 - [ ] Import mapping wizard for unknown CSVs

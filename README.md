@@ -31,7 +31,7 @@ It is not a hosted sync service, social bookmarking platform, team knowledge bas
 
 - Run a private read-later library as a small self-hosted web app.
 - Store the library in `data/openshelf.db`.
-- Add links manually or remotely via API key (Raycast, Alfred, curl, etc.).
+- Add links manually or remotely via API key (Raycast, Alfred, curl, iOS Share menu, etc.).
 - Archive, unarchive, delete links.
 - Import compatible CSV files.
 - Organize links into shelves.
@@ -64,7 +64,7 @@ It does not currently provide:
 - Multi-user accounts.
 - Team libraries.
 - Browser extensions.
-- Mobile apps.
+- Native mobile apps (you can add links from the iOS Share menu with a Shortcuts setup; see below).
 - Third-party auth.
 - Background workers.
 - Server-side search/querying.
@@ -308,6 +308,15 @@ curl -sS -X POST 'http://YOUR_OPENSHELF.com:PORT/api/v1/items' \
   -d '{"url":"https://example.com/article"}'
 ```
 
+## Save links from iPhone or iPad
+
+You can add unread links from the iOS Share menu without a native app. Use Apple’s **Shortcuts** app with your instance API key and `POST /api/v1/items`.
+
+1. On your iPhone, open OpenShelf in **Safari**, log in, and go to **Actions → API access**.
+2. Generate an API key if you do not have one yet, then follow the **Save from iPhone or iPad** steps in that dialog.
+  - Create a shortcut that accepts URLs from the Share Sheet, sends a JSON body `{"url":"..."}` to `https://YOUR_INSTANCE/api/v1/items`, and sends `Authorization: Bearer YOUR_API_KEY`.
+  - Share a page from Safari, pick your shortcut, and confirm the link shows up as unread in OpenShelf.
+
 ## Troubleshooting
 
 - Startup fails with `OPENSHELF_PASSWORD must be set before starting OpenShelf.`  
@@ -336,6 +345,9 @@ curl -sS -X POST 'http://YOUR_OPENSHELF.com:PORT/api/v1/items' \
 
 - Large libraries feel heavy.  
   The current app loads all items into browser memory and applies search, filtering, sorting, pagination, and CSV export client-side.
+
+- iOS Share shortcut fails or does nothing.  
+  Confirm the shortcut uses your public HTTPS instance URL (set up from Safari on the phone), a current API key, and `POST /api/v1/items` with `Content-Type: application/json`. A `401` means the key is missing or wrong; a `409` means the URL is already saved. Self-signed TLS certificates often fail from Shortcuts.
 
 ## License
 
