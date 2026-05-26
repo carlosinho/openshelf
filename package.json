@@ -1,7 +1,7 @@
 {
   "name": "openshelf",
   "private": true,
-  "version": "0.9.1",
+  "version": "0.9.2",
   "scripts": {
     "dev": "bun run dev:frontend",
     "dev:frontend": "webpack serve --mode=development",

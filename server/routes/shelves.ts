@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { recordAppLog } from '../app-log'
 import {
   addDomainRuleToShelf,
   addItemsToShelf,
@@ -6,6 +7,7 @@ import {
   deleteDomainRuleFromShelf,
   deleteShelf,
   getAllShelves,
+  getItemById,
   getShelfById,
   removeItemFromShelf,
   renameShelf,
@@ -96,7 +98,16 @@ shelvesRoutes.post('/:id/items', async (c) => {
     return c.json({ error: 'Invalid shelf id.' }, 400)
   }
 
-  if (!getShelfById(id)) {
+  const shelf = getShelfById(id)
+
+  if (!shelf) {
+    recordAppLog({
+      action: 'shelf.item_add.failed',
+      outcome: 'failure',
+      summary: 'Failed to add link to shelf: shelf not found.',
+      details: { shelf_id: id },
+    })
+
     return c.json({ error: 'Shelf not found.' }, 404)
   }
 
@@ -104,12 +115,56 @@ shelvesRoutes.post('/:id/items', async (c) => {
   const itemIds = Array.isArray(body.itemIds) ? body.itemIds.filter((itemId) => Number.isInteger(itemId)) : []
 
   if (itemIds.length === 0) {
+    recordAppLog({
+      action: 'shelf.item_add.failed',
+      outcome: 'failure',
+      summary: 'Failed to add link to shelf: no item ids provided.',
+      details: { shelf_id: id },
+    })
+
     return c.json({ error: 'At least one item id is required.' }, 400)
+  }
+
+  const { added, addedItemIds } = addItemsToShelf(id, itemIds)
+  const addedIdSet = new Set(addedItemIds)
+
+  for (const itemId of itemIds) {
+    const item = getItemById(itemId)
+
+    if (addedIdSet.has(itemId) && item) {
+      recordAppLog({
+        action: 'shelf.item_added',
+        outcome: 'success',
+        summary: `Added ${item.url} to shelf "${shelf.name}".`,
+        details: {
+          shelf_id: id,
+          shelf_name: shelf.name,
+          item_id: itemId,
+          url: item.url,
+        },
+      })
+      continue
+    }
+
+    recordAppLog({
+      action: 'shelf.item_add.failed',
+      outcome: 'failure',
+      summary: item
+        ? `Could not add ${item.url} to shelf "${shelf.name}" (already on shelf).`
+        : `Could not add link #${itemId} to shelf "${shelf.name}" (link not found).`,
+      details: {
+        shelf_id: id,
+        shelf_name: shelf.name,
+        item_id: itemId,
+        url: item?.url,
+        reason: item ? 'already_on_shelf' : 'item_not_found',
+      },
+    })
   }
 
   return c.json({
     ok: true,
-    added: addItemsToShelf(id, itemIds),
+    added,
   })
 })
 
@@ -137,7 +192,16 @@ shelvesRoutes.post('/:id/domains', async (c) => {
     return c.json({ error: 'Invalid shelf id.' }, 400)
   }
 
-  if (!getShelfById(id)) {
+  const shelf = getShelfById(id)
+
+  if (!shelf) {
+    recordAppLog({
+      action: 'shelf.domain_add.failed',
+      outcome: 'failure',
+      summary: 'Failed to add domain to shelf: shelf not found.',
+      details: { shelf_id: id },
+    })
+
     return c.json({ error: 'Shelf not found.' }, 404)
   }
 
@@ -145,11 +209,51 @@ shelvesRoutes.post('/:id/domains', async (c) => {
   const domain = body.domain?.trim() ?? ''
 
   if (!domain) {
+    recordAppLog({
+      action: 'shelf.domain_add.failed',
+      outcome: 'failure',
+      summary: 'Failed to add domain to shelf: domain is required.',
+      details: { shelf_id: id, shelf_name: shelf.name },
+    })
+
     return c.json({ error: 'Domain is required.' }, 400)
   }
 
   try {
     const result = addDomainRuleToShelf(id, domain)
+
+    recordAppLog({
+      action: 'shelf.domain_added',
+      outcome: 'success',
+      summary: `Added domain "${result.domain}" to shelf "${shelf.name}".`,
+      details: {
+        shelf_id: id,
+        shelf_name: shelf.name,
+        domain: result.domain,
+        linked_items: result.linkedItems,
+      },
+    })
+
+    for (const itemId of result.linkedItemIds) {
+      const item = getItemById(itemId)
+
+      if (!item) {
+        continue
+      }
+
+      recordAppLog({
+        action: 'shelf.item_added',
+        outcome: 'success',
+        summary: `Added ${item.url} to shelf "${shelf.name}" (domain ${result.domain}).`,
+        details: {
+          shelf_id: id,
+          shelf_name: shelf.name,
+          item_id: itemId,
+          url: item.url,
+          domain: result.domain,
+        },
+      })
+    }
 
     return c.json({
       ok: true,
@@ -158,6 +262,13 @@ shelvesRoutes.post('/:id/domains', async (c) => {
     })
   } catch (error) {
     if (error instanceof Error) {
+      recordAppLog({
+        action: 'shelf.domain_add.failed',
+        outcome: 'failure',
+        summary: `Failed to add domain to shelf: ${error.message}`,
+        details: { shelf_id: id, shelf_name: shelf?.name, domain },
+      })
+
       return c.json({ error: error.message }, 400)
     }
 

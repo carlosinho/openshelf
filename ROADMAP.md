@@ -115,22 +115,23 @@ Versions prior to v0.3.0 considered legacy.
 - [x] iOS sharing.
     - Uses the existing `POST /api/v1/items` API key flow via an iOS Shortcuts Share Sheet setup.
     - No native app; distribution is in-app instructions only for now.
-- [ ] App logs
+- [x] App logs.
     - Log all significant actions being taken in the app.
     - This should include: all actions being done on links - adding, archiving, unarchiving, deleting, shelf creation, adding/removing from shelf, import being done (with numbers of imported), export, remote API calls done.
     - Don't document anything that deals just with interacting with the UI - like using filters, search, checking URLs.
     - Let's keep the logs in the database, make it viewable in the actions menu, with an option to wipe, or to "delete entries older than 6 months".
-- [ ] Make it possible for users to make their own instance of OpenShelf fit their brand
+- [ ] Make it possible for users to make their own instance of OpenShelf fit their brand.
     - Option to upload their own logo / delete / replace.
     - Change the name in the header next to the logo (but keep a small "by OpenShelf" next to it). Change the SEO title too. Do not change any of the file names, routes, db names, etc. This is just for changing the visible title and header - it's all needed for some minimal self-branding.
+    - Expand the app_settings db table to use it for what makes sense here.
 
 ### v1.0.0 - Advanced imports and bulk actions
-- [ ] Import mapping wizard for unknown CSVs
+- [ ] Import mapping wizard for unknown CSVs.
     - This is for importing generic “URL/title/date” CSVs.
     - Let the user map columns like `url`, `title`, `created_at`, `tags`, `status` instead of rejecting the file. This would make OpenShelf usable for random old exports and hand-built spreadsheets.
 - [ ] Bulk domain actions.
     - Things like “archive all from this domain”, “delete all from this domain”, “move domain to shelf”.
-- [ ] Bring back "archive cleanup"
+- [ ] Bring back "archive cleanup".
     - There is an "archive cleanup" feature that's a leftover from a previous iteration of the app. The code for that feature is still there but there is no interface for it now. Let's add a simple interface back. Add a new option under the Actions drop down. Just call it "Wipe archive". Add another confirmation for this one. We don't want users clicking it by accident and having the entire archive deleted.
 
 ### Backlog / Future

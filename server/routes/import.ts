@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { recordAppLog } from '../app-log'
 import { combineCSVResults, exportPocketCSV, parseImportCSVText, type ImportSource } from '../csv'
 import { createDatabaseBackup, getAllItems, importItems } from '../db'
 
@@ -18,6 +19,13 @@ importRoutes.post('/import', async (c) => {
         : null
 
   if (!source) {
+    recordAppLog({
+      action: 'import.failed',
+      outcome: 'failure',
+      summary: 'Import failed: unsupported import source.',
+      details: { source: String(sourceValue) },
+    })
+
     return c.json({ error: 'Unsupported import source.' }, 400)
   }
 
@@ -26,6 +34,13 @@ importRoutes.post('/import', async (c) => {
     .filter((value): value is File => value instanceof File)
 
   if (files.length === 0) {
+    recordAppLog({
+      action: 'import.failed',
+      outcome: 'failure',
+      summary: 'Import failed: no CSV files uploaded.',
+      details: { source },
+    })
+
     return c.json({ error: 'Please upload at least one CSV file.' }, 400)
   }
 
@@ -35,6 +50,20 @@ importRoutes.post('/import', async (c) => {
 
   const combined = parsedResults.length === 1 ? parsedResults[0] : combineCSVResults(parsedResults)
   const importSummary = importItems(combined.data)
+  const errorCount = combined.errors.length
+
+  recordAppLog({
+    action: 'import.completed',
+    outcome: 'success',
+    summary: `Imported ${importSummary.insertedCount} link${importSummary.insertedCount === 1 ? '' : 's'} from ${source} (${importSummary.duplicateCount} duplicate${importSummary.duplicateCount === 1 ? '' : 's'}, ${errorCount} row error${errorCount === 1 ? '' : 's'}).`,
+    details: {
+      source,
+      file_count: files.length,
+      imported: importSummary.insertedCount,
+      duplicates: importSummary.duplicateCount,
+      errors: errorCount,
+    },
+  })
 
   return c.json({
     ok: true,

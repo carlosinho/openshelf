@@ -137,11 +137,30 @@ There is also a shared `Shelf` type used by both the client and server:
 | `api_key` | `TEXT NOT NULL` | Stored API key used for Bearer auth and UI reveal/copy. |
 | `created_at` | `INTEGER NOT NULL` | When the current key was generated or last regenerated. |
 
+### `app_logs` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `id` | `INTEGER PRIMARY KEY AUTOINCREMENT` | Stable log row identity. |
+| `created_at` | `INTEGER NOT NULL` | When the action occurred (Unix seconds). |
+| `action` | `TEXT NOT NULL` | Stable action code such as `item.added` or `import.completed`. |
+| `outcome` | `TEXT CHECK(outcome IN ('success', 'failure'))` | Whether the operation succeeded. |
+| `summary` | `TEXT NOT NULL` | Human-readable line shown in the App logs UI. |
+| `details` | `TEXT` | Optional JSON metadata (counts, URLs, shelf names, error codes). |
+
+### `app_settings` Table
+
+| Column | Type | Why it exists |
+| --- | --- | --- |
+| `id` | `INTEGER PRIMARY KEY CHECK (id = 1)` | Singleton row for instance-wide app settings. |
+| `logging_enabled` | `INTEGER NOT NULL DEFAULT 0` | Whether new activity rows are written to `app_logs`. Off by default. |
+
 Why the schema is still small:
 
 - There is no user model because the auth model is one shared password from the environment.
 - There is no session table because auth state lives in a signed cookie.
-- There is no saved-search, history, or settings table because those features do not exist yet.
+- There is no saved-search or larger settings table because those features do not exist yet.
+- `app_logs` stores significant library/API activity for the operator; it is not an auth audit trail.
 - Shelves use join tables and domain-rule tables instead of mutating `items`, because an item can belong to multiple shelves and deleting a shelf must not delete items.
 
 ## Main Data Flows
@@ -252,6 +271,8 @@ Important exception: canceling a validation run stops future batches, but alread
 - `server/routes/api-key.ts`: session-authenticated API key status, generate/regenerate, revoke
 - `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
 - `server/routes/import.ts`: import/export/backup
+- `server/routes/logs.ts`: list, wipe, and prune app activity logs
+- `server/app-log.ts`: safe wrapper for writing `app_logs` rows from route handlers
 - `server/db.ts`: schema plus direct query helpers
 - `server/csv.ts`: source-specific CSV parsing, validation, dedupe, and export helpers
 
@@ -264,6 +285,7 @@ Important exception: canceling a validation run stops future batches, but alread
 - Library: `/api/items`, `/api/items/check-urls`, `/api/items/:id`, `/api/items/bulk-delete`, `/api/items/clear-archived`
 - Shelves: `/api/shelves`, `/api/shelves/:id`, `/api/shelves/:id/items`, `/api/shelves/:id/domains`
 - Import/egress: `/api/import`, `/api/export`, `/api/backup`
+- Activity logs: `/api/logs`, `/api/logs/prune`
 
 ### Error Model
 
@@ -287,6 +309,7 @@ Security boundary:
 - Anyone with the shared password has full access to the whole instance, including database backup download, API key viewing/regeneration, and destructive delete operations.
 - Anyone with the API key can add unread links remotely via `POST /api/v1/items`, which triggers the same server-side title fetch behavior as manual adds.
 - There is no per-user scoping, no rate limiting, no brute-force protection, and no audit trail.
+- `app_logs` records significant library and API actions for the single operator.
 
 ## Performance Decisions
 

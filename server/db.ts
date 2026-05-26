@@ -2,7 +2,10 @@ import { mkdirSync } from 'fs'
 import { join } from 'path'
 import { Database } from 'bun:sqlite'
 import { getRootDomainFromUrl, getRootDomainFromHostname } from '../src/lib/domain'
+import type { AppLogEntry, InsertAppLogInput } from '../src/types/app-log'
 import type { PocketItem, Shelf } from '../src/types/pocket'
+
+export type { InsertAppLogInput }
 
 export type ItemStatus = PocketItem['status']
 export type ValidationStatus = PocketItem['validation_status']
@@ -45,6 +48,7 @@ export interface ValidationBatchUpdate {
 export interface AddShelfDomainResult {
   domain: string
   linkedItems: number
+  linkedItemIds: number[]
 }
 
 interface BaseItemRecord {
@@ -122,6 +126,22 @@ db.exec(`
     id INTEGER PRIMARY KEY CHECK (id = 1),
     api_key TEXT NOT NULL,
     created_at INTEGER NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS app_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    created_at INTEGER NOT NULL,
+    action TEXT NOT NULL,
+    outcome TEXT CHECK(outcome IN ('success', 'failure')) NOT NULL,
+    summary TEXT NOT NULL,
+    details TEXT
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_app_logs_created_at ON app_logs(created_at);
+
+  CREATE TABLE IF NOT EXISTS app_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    logging_enabled INTEGER NOT NULL DEFAULT 0 CHECK (logging_enabled IN (0, 1))
   );
 `)
 
@@ -262,7 +282,7 @@ function backfillShelfItemsForDomain(shelfId: number, domain: string) {
     VALUES (?, ?, ?)
   `)
 
-  let linkedItems = 0
+  const linkedItemIds: number[] = []
 
   const transaction = db.transaction((rows: Array<{ id: number; url: string }>) => {
     for (const row of rows) {
@@ -274,12 +294,14 @@ function backfillShelfItemsForDomain(shelfId: number, domain: string) {
         changes: number
       }
 
-      linkedItems += Number(result.changes ?? 0)
+      if (Number(result.changes ?? 0) > 0) {
+        linkedItemIds.push(Number(row.id))
+      }
     }
   })
 
   transaction(itemRows)
-  return linkedItems
+  return linkedItemIds
 }
 
 function applyDomainShelvesToItem(itemId: number, url: string) {
@@ -622,13 +644,18 @@ export function deleteShelf(id: number): number {
   return Number(result.changes ?? 0)
 }
 
-export function addItemsToShelf(shelfId: number, itemIds: number[]): number {
+export interface AddItemsToShelfResult {
+  added: number
+  addedItemIds: number[]
+}
+
+export function addItemsToShelf(shelfId: number, itemIds: number[]): AddItemsToShelfResult {
   ensureShelfExists(shelfId)
 
   const uniqueItemIds = Array.from(new Set(itemIds.filter((id) => Number.isInteger(id) && id > 0)))
 
   if (uniqueItemIds.length === 0) {
-    return 0
+    return { added: 0, addedItemIds: [] }
   }
 
   const insertStatement = db.query(`
@@ -636,18 +663,25 @@ export function addItemsToShelf(shelfId: number, itemIds: number[]): number {
     VALUES (?, ?, ?)
   `)
 
-  let added = 0
+  const addedItemIds: number[] = []
   const now = getCurrentTimestamp()
 
   const transaction = db.transaction((ids: number[]) => {
     for (const itemId of ids) {
       const result = insertStatement.run(shelfId, itemId, now) as { changes: number }
-      added += Number(result.changes ?? 0)
+
+      if (Number(result.changes ?? 0) > 0) {
+        addedItemIds.push(itemId)
+      }
     }
   })
 
   transaction(uniqueItemIds)
-  return added
+
+  return {
+    added: addedItemIds.length,
+    addedItemIds,
+  }
 }
 
 export function removeItemFromShelf(shelfId: number, itemId: number): number {
@@ -667,9 +701,12 @@ export function addDomainRuleToShelf(shelfId: number, domain: string): AddShelfD
     VALUES (?, ?, ?)
   `).run(shelfId, normalizedDomain, getCurrentTimestamp())
 
+  const linkedItemIds = backfillShelfItemsForDomain(shelfId, normalizedDomain)
+
   return {
     domain: normalizedDomain,
-    linkedItems: backfillShelfItemsForDomain(shelfId, normalizedDomain),
+    linkedItems: linkedItemIds.length,
+    linkedItemIds,
   }
 }
 
@@ -734,4 +771,90 @@ export function clearApiKey(): boolean {
 export function getItemCount(): number {
   const row = db.query(`SELECT COUNT(*) as count FROM items`).get() as { count: number }
   return Number(row.count)
+}
+
+function serializeAppLogDetails(details?: Record<string, unknown>) {
+  if (!details || Object.keys(details).length === 0) {
+    return null
+  }
+
+  return JSON.stringify(details)
+}
+
+export function isAppLoggingEnabled(): boolean {
+  const row = db
+    .query(`SELECT logging_enabled FROM app_settings WHERE id = 1`)
+    .get() as { logging_enabled: number } | null
+
+  if (!row) {
+    return false
+  }
+
+  return Number(row.logging_enabled) === 1
+}
+
+export function setAppLoggingEnabled(enabled: boolean) {
+  db.query(
+    `
+      INSERT INTO app_settings (id, logging_enabled)
+      VALUES (1, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        logging_enabled = excluded.logging_enabled
+    `
+  ).run(enabled ? 1 : 0)
+}
+
+export function insertAppLog(input: InsertAppLogInput) {
+  db.query(
+    `
+      INSERT INTO app_logs (created_at, action, outcome, summary, details)
+      VALUES (?, ?, ?, ?, ?)
+    `
+  ).run(
+    getCurrentTimestamp(),
+    input.action,
+    input.outcome,
+    input.summary,
+    serializeAppLogDetails(input.details)
+  )
+}
+
+export function listAppLogs(limit = 200): AppLogEntry[] {
+  const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 500)
+  const rows = db
+    .query(
+      `
+        SELECT id, created_at, action, outcome, summary, details
+        FROM app_logs
+        ORDER BY created_at DESC, id DESC
+        LIMIT ?
+      `
+    )
+    .all(safeLimit) as Array<Record<string, unknown>>
+
+  return rows.map((row) => ({
+    id: Number(row.id),
+    created_at: Number(row.created_at),
+    action: String(row.action) as AppLogEntry['action'],
+    outcome: row.outcome as AppLogEntry['outcome'],
+    summary: String(row.summary),
+    details: row.details == null ? undefined : String(row.details),
+  }))
+}
+
+export function deleteAllAppLogs(): number {
+  const result = db.query(`DELETE FROM app_logs`).run() as { changes: number }
+  return Number(result.changes ?? 0)
+}
+
+const APP_LOG_PRUNE_MONTH_SECONDS = 30 * 24 * 60 * 60
+
+export function deleteAppLogsOlderThanMonths(months: number): number {
+  const safeMonths = Math.max(Math.floor(months), 1)
+  const cutoff = getCurrentTimestamp() - safeMonths * APP_LOG_PRUNE_MONTH_SECONDS
+  const result = db
+    .query(`DELETE FROM app_logs WHERE created_at < ?`)
+    .run(cutoff) as { changes: number }
+
+  return Number(result.changes ?? 0)
 }

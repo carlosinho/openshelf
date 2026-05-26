@@ -1,5 +1,6 @@
 import { timingSafeEqual } from 'crypto'
 import { createMiddleware } from 'hono/factory'
+import { recordAppLog } from './app-log'
 import { getApiKeyRecord } from './db'
 
 const API_KEY_PREFIX = 'os_'
@@ -50,6 +51,13 @@ export const requireApiKey = createMiddleware(async (c, next) => {
   const token = parseBearerToken(c.req.header('Authorization'))
 
   if (!isValidApiKey(token)) {
+    recordAppLog({
+      action: 'item.add.remote.failed',
+      outcome: 'failure',
+      summary: 'Failed to add link via API: unauthorized.',
+      details: { reason: token ? 'invalid_key' : 'missing_key' },
+    })
+
     return c.json({ error: 'Unauthorized' }, 401)
   }
 

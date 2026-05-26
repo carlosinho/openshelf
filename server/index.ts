@@ -6,6 +6,7 @@ import { getItemCount } from './db'
 import { apiKeyRoutes } from './routes/api-key'
 import { importRoutes } from './routes/import'
 import { itemsRoutes } from './routes/items'
+import { logsRoutes } from './routes/logs'
 import { shelvesRoutes } from './routes/shelves'
 import { v1Routes } from './routes/v1'
 
@@ -56,6 +57,7 @@ app.route('/api/v1', v1Routes)
 app.use('/api/*', requireAuth)
 app.route('/api/api-key', apiKeyRoutes)
 app.route('/api/items', itemsRoutes)
+app.route('/api/logs', logsRoutes)
 app.route('/api/shelves', shelvesRoutes)
 app.route('/api', importRoutes)
 

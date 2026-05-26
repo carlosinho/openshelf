@@ -1,3 +1,4 @@
+import type { AppLogsResponse } from '../types/app-log'
 import type { PocketItem, Shelf } from '../types/pocket'
 import type { ImportSource } from '../types/import'
 
@@ -211,5 +212,28 @@ export async function generateApiKey() {
 export async function revokeApiKey() {
   return apiRequest<{ configured: false }>('/api/api-key', {
     method: 'DELETE',
+  })
+}
+
+export async function fetchAppLogs(limit = 200) {
+  return apiRequest<AppLogsResponse>(`/api/logs?limit=${limit}`)
+}
+
+export async function setAppLoggingEnabled(loggingEnabled: boolean) {
+  return apiRequest<{ logging_enabled: boolean }>('/api/logs/settings', {
+    method: 'PATCH',
+    body: JSON.stringify({ logging_enabled: loggingEnabled }),
+  })
+}
+
+export async function deleteAllAppLogs() {
+  return apiRequest<{ ok: true; deleted: number }>('/api/logs', {
+    method: 'DELETE',
+  })
+}
+
+export async function pruneAppLogs() {
+  return apiRequest<{ ok: true; deleted: number; older_than_months: number }>('/api/logs/prune', {
+    method: 'POST',
   })
 }

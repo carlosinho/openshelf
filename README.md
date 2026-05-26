@@ -292,8 +292,12 @@ ARCHITECTURE.md
 | `POST` | `/api/import` | Multipart CSV import. Field name: `files`. |
 | `GET` | `/api/export?scope=all|archive|unread` | Server-side CSV export. |
 | `GET` | `/api/backup` | Download a raw SQLite backup. |
+| `GET` | `/api/logs` | Return recent app activity logs and whether logging is enabled (session auth). |
+| `PATCH` | `/api/logs/settings` | Turn activity logging on or off (`{ "logging_enabled": true }`). Off by default. |
+| `DELETE` | `/api/logs` | Wipe all app logs. |
+| `POST` | `/api/logs/prune` | Delete log entries older than 6 months. |
 
-The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`.
+The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`. App logs are viewable from **Actions → App logs**.
 
 ## Using the API with curl
 
