@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { DataDisplay } from './components/DataDisplay'
 import { Navbar } from './components/Navbar'
-import { KarolBadge } from './components/KarolBadge'
-import { KarolFooter } from './components/KarolFooter'
+import { AppFooter } from './components/AppFooter'
 import { LoginForm } from './components/LoginForm'
 import { PocketItem, Shelf } from './types/pocket'
 import { Database, Download, ExternalLink } from 'lucide-react'
@@ -177,11 +176,10 @@ function App() {
         </div>
       )}
 
-      {/* Footer */}
-      <KarolFooter version={`ver ${packageJson.version}`} className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
-
-      {/* Karol Badge - floating face */
-      <KarolBadge />}
+      <AppFooter
+        version={`ver ${packageJson.version}`}
+        className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''}
+      />
 
     </div>
   )

@@ -95,7 +95,7 @@ There is also a shared `Shelf` type used by both the client and server:
 - Engine: `bun:sqlite`
 - Journal mode: `WAL`
 - Backup mechanism: `db.serialize()` via `GET /api/backup`
-- Migration system: none; schema is created inline in `server/db.ts`
+- Schema is created inline in `server/db.ts` at startup (`CREATE TABLE IF NOT EXISTS`).
 
 ### `items` Table
 
@@ -163,8 +163,6 @@ There is also a shared `Shelf` type used by both the client and server:
 | `logging_enabled` | `INTEGER NOT NULL DEFAULT 0` | Whether new activity rows are written to `app_logs`. Off by default. |
 | `display_name` | `TEXT` | Optional custom header/tab title. Empty or null resolves to `OpenShelf` in API responses. |
 | `logo_updated_at` | `INTEGER` | When the custom logo file was last written; drives cache-busting on `/api/settings/logo`. |
-
-Existing databases gain `display_name` and `logo_updated_at` at startup through inline `ALTER TABLE` checks in `server/db.ts` (there is still no separate migration runner).
 
 ### Custom Logo File
 
@@ -397,6 +395,6 @@ Security boundary:
 - The repository includes a GitHub Actions workflow that publishes the Docker image to Docker Hub from the default branch and version tags.
 - TypeScript runs with `strict: true`.
 - The frontend and backend share types by direct import, which is simple but couples server code to `src/`.
-- Schema creation lives inline in `server/db.ts`; future schema changes will need manual migration work because no migration system exists yet.
+- Schema is defined inline in `server/db.ts`; new installs get the current tables from `CREATE TABLE IF NOT EXISTS`.
 - Root-domain parsing depends on `tldts` so shelf domain rules work correctly for registrable domains such as `example.co.uk`.
 - The current shipped UI does not exercise every backend capability. Most notably, `/api/export` exists but is not used by the browser UI.

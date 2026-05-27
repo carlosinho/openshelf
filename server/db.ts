@@ -153,8 +153,6 @@ db.exec(`
   );
 `)
 
-ensureAppSettingsColumns()
-
 const baseSelect = `
   SELECT
     id,
@@ -171,22 +169,6 @@ const baseSelect = `
 
 function getCurrentTimestamp() {
   return Math.floor(Date.now() / 1000)
-}
-
-function ensureAppSettingsColumns() {
-  const columns = db
-    .query(`PRAGMA table_info(app_settings)`)
-    .all() as { name: string }[]
-
-  const columnNames = new Set(columns.map((column) => column.name))
-
-  if (!columnNames.has('display_name')) {
-    db.exec(`ALTER TABLE app_settings ADD COLUMN display_name TEXT`)
-  }
-
-  if (!columnNames.has('logo_updated_at')) {
-    db.exec(`ALTER TABLE app_settings ADD COLUMN logo_updated_at INTEGER`)
-  }
 }
 
 function mapItemRow(row: Record<string, unknown> | null): BaseItemRecord | null {
