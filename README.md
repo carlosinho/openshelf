@@ -39,6 +39,7 @@ It is not a hosted sync service, social bookmarking platform, team knowledge bas
 - Run server-side URL checks on the current filtered unread set and filter down to problematic links.
 - Export all items, filtered views, or selected rows to CSV.
 - Download a raw SQLite backup.
+- Personalize the instance with a custom display name and logo (header, browser tab, and login screen). Cosmetic only; internal product names and routes stay OpenShelf.
 
 ## Who OpenShelf is for
 
@@ -95,10 +96,19 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 4. Optionally create shelves such as `work`, `funny`, or `important`, add individual links to them, or attach an entire root domain so current and future links from that domain land on the same shelf automatically.
 5. Optionally import more Pocket, Instapaper, Matter, or Raindrop CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
 
+### Personalization
+
+1. After logging in, open **Actions → Personalization**.
+2. Set a **display name** (shown in the authenticated header and browser tab title).
+3. Upload a **logo** (PNG, JPEG, WebP, or GIF, max 2MB). It appears in the header, as the favicon, and on the login screen. Remove it to restore the default OpenShelf artwork.
+
+This is display-only branding. Database filenames, API paths, and the product identity in docs and code remain OpenShelf.
+
 ### Export And Backup
 
 - CSV export is generated in the browser from the currently loaded dataset.
 - A raw SQLite snapshot is downloaded from `/api/backup`.
+- The display name is stored in SQLite. A custom logo is stored as `data/custom-logo.<ext>` on disk (not inside the database). Keep the whole `data/` directory or Docker volume when backing up or migrating if you use a custom logo.
 
 ## Tech Stack
 
@@ -176,6 +186,7 @@ Persistence:
 
 - Docker volume `openshelf-data` is mounted to container `/app/data`.
 - The SQLite file is `data/openshelf.db`.
+- An optional custom logo is stored as `data/custom-logo.<ext>` in the same directory.
 - Keep that volume when updating the container.
 - To stop or restart later, run `docker stop openshelf` or `docker restart openshelf`.
 
@@ -238,6 +249,7 @@ server/
   api-key.ts          # API key generation and Bearer auth middleware
   create-item.ts      # Shared manual/API link creation and title fetching
   db.ts               # SQLite schema, queries, and backup serialization
+  personalization.ts  # Custom logo file storage under data/
   csv.ts              # CSV validation, parsing, merge, and export helpers
   routes/
     items.ts          # List, create, patch, URL-check, delete, bulk-delete, clear-archived
@@ -245,9 +257,11 @@ server/
     api-key.ts        # API key status, generate, and revoke (session auth)
     shelves.ts        # Shelf CRUD, item assignment, and domain-rule routes
     import.ts         # CSV import, server-side CSV export, SQLite backup
+    settings.ts       # Personalization settings and custom logo routes
 src/
   App.tsx             # Session bootstrap and top-level screen switching
   lib/api.ts          # Browser API client
+  lib/branding.ts     # Document title, favicon, and default logo helpers
   lib/domain.ts       # Root-domain parsing shared by client and server
   components/
     FileUpload.tsx    # Reusable CSV import UI used by the import dialog
@@ -256,8 +270,10 @@ src/
     data-display/
       ...             # Extracted DataDisplay UI sections and helpers
   types/pocket.ts     # Shared item type used by client and server
+  types/settings.ts   # Personalization API types
 data/
   openshelf.db        # Created automatically at runtime
+  custom-logo.*       # Optional uploaded logo (png, jpg, webp, or gif)
 Dockerfile
 .github/workflows/docker-publish.yml
 ROADMAP.md
@@ -296,8 +312,13 @@ ARCHITECTURE.md
 | `PATCH` | `/api/logs/settings` | Turn activity logging on or off (`{ "logging_enabled": true }`). Off by default. |
 | `DELETE` | `/api/logs` | Wipe all app logs. |
 | `POST` | `/api/logs/prune` | Delete log entries older than 6 months. |
+| `GET` | `/api/settings/personalization` | Public. Returns `{ display_name, has_custom_logo, logo_updated_at }`. |
+| `GET` | `/api/settings/logo` | Public. Returns the custom logo image bytes, or `404` if none is configured. |
+| `PATCH` | `/api/settings/personalization` | Update display name (`{ "display_name": "..." }` or `null` to reset). Session auth. |
+| `POST` | `/api/settings/logo` | Upload or replace logo. Multipart field: `logo`. Session auth. |
+| `DELETE` | `/api/settings/logo` | Remove custom logo and restore defaults. Session auth. |
 
-The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`. App logs are viewable from **Actions → App logs**.
+The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`. App logs are viewable from **Actions → App logs**. Personalization is under **Actions → Personalization**.
 
 ## Using the API with curl
 
@@ -352,6 +373,9 @@ You can add unread links from the iOS Share menu without a native app. Use Apple
 
 - iOS Share shortcut fails or does nothing.  
   Confirm the shortcut uses your public HTTPS instance URL (set up from Safari on the phone), a current API key, and `POST /api/v1/items` with `Content-Type: application/json`. A `401` means the key is missing or wrong; a `409` means the URL is already saved. Self-signed TLS certificates often fail from Shortcuts.
+
+- Custom logo missing after restore.  
+  `GET /api/backup` only includes the SQLite file. Copy `data/custom-logo.*` from the same backup or volume if you migrated or restored from a DB-only snapshot.
 
 ## License
 

@@ -1,13 +1,15 @@
 import { useState } from 'react'
-import { AlertCircle, LockKeyhole } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { Button } from './ui/button'
 
 interface LoginFormProps {
   onSubmit: (password: string) => Promise<void>
   error?: string | null
+  logoSrc: string
+  logoAlt: string
 }
 
-export function LoginForm({ onSubmit, error }: LoginFormProps) {
+export function LoginForm({ onSubmit, error, logoSrc, logoAlt }: LoginFormProps) {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -31,8 +33,8 @@ export function LoginForm({ onSubmit, error }: LoginFormProps) {
   return (
     <form onSubmit={handleSubmit} className="mx-auto max-w-md space-y-4 rounded-lg border bg-card p-6 shadow-sm">
       <div className="space-y-2 text-center">
-        <div className="mx-auto flex size-12 items-center justify-center rounded-full border bg-muted">
-          <LockKeyhole className="size-5 text-muted-foreground" />
+        <div className="mx-auto flex h-16 w-full max-w-[200px] items-center justify-center">
+          <img src={logoSrc} alt={logoAlt} className="max-h-16 w-auto object-contain" />
         </div>
         <h2 className="text-2xl font-semibold">Unlock OpenShelf</h2>
         <p className="text-sm text-muted-foreground">

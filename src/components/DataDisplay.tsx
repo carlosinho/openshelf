@@ -33,6 +33,7 @@ import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeader
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
 import { ApiKeyDialog } from './data-display/ApiKeyDialog'
 import { AppLogsDialog } from './data-display/AppLogsDialog'
+import { PersonalizationDialog } from './data-display/PersonalizationDialog'
 import { ImportDialog } from './data-display/ImportDialog'
 import { DataDisplayListControls } from './data-display/DataDisplayListControls'
 import { DataDisplayPagination } from './data-display/DataDisplayPagination'
@@ -42,12 +43,14 @@ import { DataDisplayTable } from './data-display/DataDisplayTable'
 import { DataDisplayValidationStatus } from './data-display/DataDisplayValidationStatus'
 import { isHomepage } from './data-display/isHomepage'
 import type { ImportResult } from '../types/import'
+import type { PersonalizationSettings } from '../types/settings'
 
 interface DataDisplayProps {
   data: PocketItem[]
   shelves: Shelf[]
   className?: string
   onRefresh?: () => Promise<void> | void
+  onBrandingChange: (settings: PersonalizationSettings) => void
 }
 
 type SortDirection = 'asc' | 'desc'
@@ -88,7 +91,7 @@ function matchesBuiltInDateView(item: PocketItem, view: BuiltInDateView, now: Da
   return itemDate < oneYearAgo
 }
 
-export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplayProps) {
+export function DataDisplay({ data, shelves, className, onRefresh, onBrandingChange }: DataDisplayProps) {
   const id = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -136,6 +139,7 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
   const [isShelfManagerOpen, setIsShelfManagerOpen] = useState(false)
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false)
   const [isAppLogsDialogOpen, setIsAppLogsDialogOpen] = useState(false)
+  const [isPersonalizationDialogOpen, setIsPersonalizationDialogOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
   const addLinkInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -827,6 +831,10 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
               setIsAppLogsDialogOpen(true)
               setIsActionsOpen(false)
             }}
+            onOpenPersonalizationDialog={() => {
+              setIsPersonalizationDialogOpen(true)
+              setIsActionsOpen(false)
+            }}
             onStartValidation={() => {
               void handleStartValidation()
               setIsActionsOpen(false)
@@ -872,6 +880,13 @@ export function DataDisplay({ data, shelves, className, onRefresh }: DataDisplay
       {isApiKeyDialogOpen ? <ApiKeyDialog onClose={() => setIsApiKeyDialogOpen(false)} /> : null}
 
       {isAppLogsDialogOpen ? <AppLogsDialog onClose={() => setIsAppLogsDialogOpen(false)} /> : null}
+
+      {isPersonalizationDialogOpen ? (
+        <PersonalizationDialog
+          onClose={() => setIsPersonalizationDialogOpen(false)}
+          onUpdated={onBrandingChange}
+        />
+      ) : null}
 
       {isImportDialogOpen ? (
         <ImportDialog

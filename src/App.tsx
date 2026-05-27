@@ -7,15 +7,31 @@ import { LoginForm } from './components/LoginForm'
 import { PocketItem, Shelf } from './types/pocket'
 import { Database, Download, ExternalLink } from 'lucide-react'
 import { Button } from './components/ui/button'
-import { ApiError, checkAuth, fetchItems, fetchShelves, login, logout } from './lib/api'
+import { ApiError, checkAuth, fetchItems, fetchPersonalization, fetchShelves, login, logout } from './lib/api'
+import { applyBrandingToDocument, DEFAULT_DISPLAY_NAME, getLogoSrc } from './lib/branding'
+import type { PersonalizationSettings } from './types/settings'
 import packageJson from '../package.json'
+
+const DEFAULT_PERSONALIZATION: PersonalizationSettings = {
+  display_name: DEFAULT_DISPLAY_NAME,
+  has_custom_logo: false,
+  logo_updated_at: null,
+}
 
 function App() {
   const [data, setData] = useState<PocketItem[]>([])
   const [shelves, setShelves] = useState<Shelf[]>([])
+  const [personalization, setPersonalization] = useState<PersonalizationSettings>(DEFAULT_PERSONALIZATION)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [authError, setAuthError] = useState<string | null>(null)
+
+  const handleBrandingChange = (settings: PersonalizationSettings) => {
+    setPersonalization(settings)
+    applyBrandingToDocument(settings)
+  }
+
+  const logoSrc = getLogoSrc(personalization)
 
   const handleDataParsed = (items: PocketItem[]) => {
     setData(items)
@@ -31,6 +47,13 @@ function App() {
 
   useEffect(() => {
     const initializeApp = async () => {
+      try {
+        const settings = await fetchPersonalization()
+        handleBrandingChange(settings)
+      } catch {
+        applyBrandingToDocument(DEFAULT_PERSONALIZATION)
+      }
+
       try {
         await checkAuth()
         setIsAuthenticated(true)
@@ -82,7 +105,9 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      {isAuthenticated ? (
+        <Navbar displayName={personalization.display_name} logoSrc={logoSrc} />
+      ) : null}
       <div className="container mx-auto px-4 py-4">
         <main className="space-y-8">
           {isCheckingSession ? (
@@ -90,7 +115,12 @@ function App() {
               <div className="text-sm text-muted-foreground">Loading OpenShelf...</div>
             </div>
           ) : !isAuthenticated ? (
-            <LoginForm onSubmit={handleLogin} error={authError} />
+            <LoginForm
+              onSubmit={handleLogin}
+              error={authError}
+              logoSrc={logoSrc}
+              logoAlt={personalization.display_name}
+            />
           ) : (
             <div className="space-y-6">
               {!hasLibraryContent && (
@@ -115,7 +145,12 @@ function App() {
                 </div>
               )}
               <div className="bg-card">
-                <DataDisplay data={data} shelves={shelves} onRefresh={refetchLibrary} />
+                <DataDisplay
+                  data={data}
+                  shelves={shelves}
+                  onRefresh={refetchLibrary}
+                  onBrandingChange={handleBrandingChange}
+                />
               </div>
             </div>
           )}
@@ -145,8 +180,8 @@ function App() {
       {/* Footer */}
       <KarolFooter version={`ver ${packageJson.version}`} className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''} />
 
-      {/* Karol Badge - floating face 
-      <KarolBadge />*/}
+      {/* Karol Badge - floating face */
+      <KarolBadge />}
 
     </div>
   )

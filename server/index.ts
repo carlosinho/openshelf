@@ -8,6 +8,7 @@ import { importRoutes } from './routes/import'
 import { itemsRoutes } from './routes/items'
 import { logsRoutes } from './routes/logs'
 import { shelvesRoutes } from './routes/shelves'
+import { settingsAuthRoutes, settingsPublicRoutes } from './routes/settings'
 import { v1Routes } from './routes/v1'
 
 await initializeAuth()
@@ -54,7 +55,9 @@ app.get('/api/health', (c) => {
 
 app.route('/api/auth', authRoutes)
 app.route('/api/v1', v1Routes)
+app.route('/api/settings', settingsPublicRoutes)
 app.use('/api/*', requireAuth)
+app.route('/api/settings', settingsAuthRoutes)
 app.route('/api/api-key', apiKeyRoutes)
 app.route('/api/items', itemsRoutes)
 app.route('/api/logs', logsRoutes)

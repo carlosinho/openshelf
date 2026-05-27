@@ -3,7 +3,13 @@ import { join } from 'path'
 import { Database } from 'bun:sqlite'
 import { getRootDomainFromUrl, getRootDomainFromHostname } from '../src/lib/domain'
 import type { AppLogEntry, InsertAppLogInput } from '../src/types/app-log'
+import type { PersonalizationSettings } from '../src/types/settings'
 import type { PocketItem, Shelf } from '../src/types/pocket'
+import {
+  deleteCustomLogoFiles,
+  hasCustomLogo,
+  resolveDisplayName,
+} from './personalization'
 
 export type { InsertAppLogInput }
 
@@ -141,9 +147,13 @@ db.exec(`
 
   CREATE TABLE IF NOT EXISTS app_settings (
     id INTEGER PRIMARY KEY CHECK (id = 1),
-    logging_enabled INTEGER NOT NULL DEFAULT 0 CHECK (logging_enabled IN (0, 1))
+    logging_enabled INTEGER NOT NULL DEFAULT 0 CHECK (logging_enabled IN (0, 1)),
+    display_name TEXT,
+    logo_updated_at INTEGER
   );
 `)
+
+ensureAppSettingsColumns()
 
 const baseSelect = `
   SELECT
@@ -161,6 +171,22 @@ const baseSelect = `
 
 function getCurrentTimestamp() {
   return Math.floor(Date.now() / 1000)
+}
+
+function ensureAppSettingsColumns() {
+  const columns = db
+    .query(`PRAGMA table_info(app_settings)`)
+    .all() as { name: string }[]
+
+  const columnNames = new Set(columns.map((column) => column.name))
+
+  if (!columnNames.has('display_name')) {
+    db.exec(`ALTER TABLE app_settings ADD COLUMN display_name TEXT`)
+  }
+
+  if (!columnNames.has('logo_updated_at')) {
+    db.exec(`ALTER TABLE app_settings ADD COLUMN logo_updated_at INTEGER`)
+  }
 }
 
 function mapItemRow(row: Record<string, unknown> | null): BaseItemRecord | null {
@@ -802,6 +828,84 @@ export function setAppLoggingEnabled(enabled: boolean) {
         logging_enabled = excluded.logging_enabled
     `
   ).run(enabled ? 1 : 0)
+}
+
+function getAppSettingsRow() {
+  return db
+    .query(
+      `
+        SELECT logging_enabled, display_name, logo_updated_at
+        FROM app_settings
+        WHERE id = 1
+      `
+    )
+    .get() as
+    | {
+        logging_enabled: number
+        display_name: string | null
+        logo_updated_at: number | null
+      }
+    | null
+}
+
+export function getPersonalization(): PersonalizationSettings {
+  const row = getAppSettingsRow()
+  const logoUpdatedAt =
+    row?.logo_updated_at == null ? null : Number(row.logo_updated_at)
+
+  return {
+    display_name: resolveDisplayName(row?.display_name),
+    has_custom_logo: hasCustomLogo(),
+    logo_updated_at: hasCustomLogo() ? logoUpdatedAt : null,
+  }
+}
+
+export function setDisplayName(displayName: string) {
+  const existing = getAppSettingsRow()
+  const loggingEnabled = existing ? Number(existing.logging_enabled) === 1 : false
+  const logoUpdatedAt = existing?.logo_updated_at ?? null
+
+  db.query(
+    `
+      INSERT INTO app_settings (id, logging_enabled, display_name, logo_updated_at)
+      VALUES (1, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        display_name = excluded.display_name
+    `
+  ).run(loggingEnabled ? 1 : 0, displayName || null, logoUpdatedAt)
+}
+
+export function touchCustomLogo() {
+  const timestamp = getCurrentTimestamp()
+  const existing = getAppSettingsRow()
+  const loggingEnabled = existing ? Number(existing.logging_enabled) === 1 : false
+  const displayName = existing?.display_name ?? null
+
+  db.query(
+    `
+      INSERT INTO app_settings (id, logging_enabled, display_name, logo_updated_at)
+      VALUES (1, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        logo_updated_at = excluded.logo_updated_at
+    `
+  ).run(loggingEnabled ? 1 : 0, displayName, timestamp)
+}
+
+export function clearCustomLogo() {
+  deleteCustomLogoFiles()
+
+  const existing = getAppSettingsRow()
+  const loggingEnabled = existing ? Number(existing.logging_enabled) === 1 : false
+  const displayName = existing?.display_name ?? null
+
+  db.query(
+    `
+      INSERT INTO app_settings (id, logging_enabled, display_name, logo_updated_at)
+      VALUES (1, ?, ?, NULL)
+      ON CONFLICT(id) DO UPDATE SET
+        logo_updated_at = NULL
+    `
+  ).run(loggingEnabled ? 1 : 0, displayName)
 }
 
 export function insertAppLog(input: InsertAppLogInput) {

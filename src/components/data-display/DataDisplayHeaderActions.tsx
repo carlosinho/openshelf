@@ -1,5 +1,17 @@
 import type { Ref } from 'react'
-import { BookMarked, ChevronDown, Download, KeyRound, Plus, ScrollText, Sparkles, Trash2, Upload, X } from 'lucide-react'
+import {
+  BookMarked,
+  ChevronDown,
+  Download,
+  KeyRound,
+  Palette,
+  Plus,
+  ScrollText,
+  Sparkles,
+  Trash2,
+  Upload,
+  X,
+} from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip } from '../ui/tooltip'
 
@@ -20,6 +32,7 @@ interface DataDisplayHeaderActionsProps {
   onOpenShelfManager: () => void
   onOpenApiKeyDialog: () => void
   onOpenAppLogsDialog: () => void
+  onOpenPersonalizationDialog: () => void
   onToggleAddLink: () => void
 }
 
@@ -40,6 +53,7 @@ export function DataDisplayHeaderActions({
   onOpenShelfManager,
   onOpenApiKeyDialog,
   onOpenAppLogsDialog,
+  onOpenPersonalizationDialog,
   onToggleAddLink,
 }: DataDisplayHeaderActionsProps) {
   return (
@@ -114,6 +128,15 @@ export function DataDisplayHeaderActions({
             >
               <ScrollText className="size-4 opacity-60" aria-hidden="true" />
               App logs
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onOpenPersonalizationDialog}
+              className="w-full justify-start gap-2"
+            >
+              <Palette className="size-4 opacity-60" aria-hidden="true" />
+              Personalization
             </Button>
             {!isValidationRunning ? (
               <Tooltip content="Checks only links from unread items in the current view">

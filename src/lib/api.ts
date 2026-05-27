@@ -1,4 +1,5 @@
 import type { AppLogsResponse } from '../types/app-log'
+import type { PersonalizationSettings } from '../types/settings'
 import type { PocketItem, Shelf } from '../types/pocket'
 import type { ImportSource } from '../types/import'
 
@@ -235,5 +236,32 @@ export async function deleteAllAppLogs() {
 export async function pruneAppLogs() {
   return apiRequest<{ ok: true; deleted: number; older_than_months: number }>('/api/logs/prune', {
     method: 'POST',
+  })
+}
+
+export async function fetchPersonalization() {
+  return apiRequest<PersonalizationSettings>('/api/settings/personalization')
+}
+
+export async function updatePersonalizationDisplayName(displayName: string | null) {
+  return apiRequest<PersonalizationSettings>('/api/settings/personalization', {
+    method: 'PATCH',
+    body: JSON.stringify({ display_name: displayName }),
+  })
+}
+
+export async function uploadPersonalizationLogo(file: File) {
+  const formData = new FormData()
+  formData.append('logo', file)
+
+  return apiRequest<PersonalizationSettings>('/api/settings/logo', {
+    method: 'POST',
+    body: formData,
+  })
+}
+
+export async function deletePersonalizationLogo() {
+  return apiRequest<PersonalizationSettings>('/api/settings/logo', {
+    method: 'DELETE',
   })
 }

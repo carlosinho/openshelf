@@ -13,6 +13,7 @@ browser
 Bun + Hono server
     |
     +--> SQLite database: data/openshelf.db
+    +--> optional custom logo file: data/custom-logo.<ext>
     +--> static frontend assets from dist/ outside development mode
 ```
 
@@ -20,7 +21,7 @@ Production packaging:
 
 - The official install artifact is a single Docker image published to Docker Hub as `carlosinho/openshelf`.
 - The container listens on port `3000`.
-- Persistent app data lives under `/app/data`, which maps to the SQLite path `data/openshelf.db` inside the process.
+- Persistent app data lives under `/app/data`, which maps to `data/openshelf.db` and optional `data/custom-logo.<ext>` inside the process.
 
 Absent by design right now:
 
@@ -41,12 +42,12 @@ Absent by design right now:
 
 ## Key Invariants And Rules
 
-- `data/openshelf.db` is the only persistent store.
+- Library data lives in `data/openshelf.db`. Instance personalization also writes an optional logo file under `data/custom-logo.<ext>` (not stored in SQLite).
 - Every saved link is an `items` row.
 - Shelves are separate entities that group items through explicit memberships and root-domain rules.
 - `items.url` is globally unique inside one OpenShelf instance.
 - Auth is instance-wide. There are no users, roles, or per-item ownership rules.
-- All `/api/*` routes require session auth except `/api/health`, `/api/auth/login`, and `/api/v1/*` (which use a Bearer API key instead).
+- All `/api/*` routes require session auth except `/api/health`, `/api/auth/login`, `/api/settings/personalization`, `/api/settings/logo`, and `/api/v1/*` (which use a Bearer API key instead).
 - The browser normally loads the full library with `GET /api/items` and then applies status selection, search, platform filters, shelf filters, custom date filters, built-in date filter presets, homepage-only and problem-only filters, sorting, pagination, and browser-side CSV export locally.
 - The main list view defaults to unread-only. Two header checkboxes control status selection: unread, archive, both, or neither.
 - Status selection is treated as the current list scope rather than as a counted filter badge inside the filter drawer.
@@ -78,6 +79,12 @@ There is also a shared `Shelf` type used by both the client and server:
 - `domains`: saved root-domain rules for that shelf.
 - `created_at`: Unix timestamp when the shelf was created.
 - `updated_at`: Unix timestamp when the shelf was most recently renamed.
+
+`PersonalizationSettings` in `src/types/settings.ts` is the read model for instance branding:
+
+- `display_name`: resolved title shown in the header and browser tab (defaults to `OpenShelf` when unset).
+- `has_custom_logo`: whether `data/custom-logo.<ext>` exists.
+- `logo_updated_at`: Unix timestamp used to cache-bust logo and favicon URLs; `null` when no custom logo is configured.
 
 ## Persistence Model
 
@@ -154,12 +161,23 @@ There is also a shared `Shelf` type used by both the client and server:
 | --- | --- | --- |
 | `id` | `INTEGER PRIMARY KEY CHECK (id = 1)` | Singleton row for instance-wide app settings. |
 | `logging_enabled` | `INTEGER NOT NULL DEFAULT 0` | Whether new activity rows are written to `app_logs`. Off by default. |
+| `display_name` | `TEXT` | Optional custom header/tab title. Empty or null resolves to `OpenShelf` in API responses. |
+| `logo_updated_at` | `INTEGER` | When the custom logo file was last written; drives cache-busting on `/api/settings/logo`. |
+
+Existing databases gain `display_name` and `logo_updated_at` at startup through inline `ALTER TABLE` checks in `server/db.ts` (there is still no separate migration runner).
+
+### Custom Logo File
+
+- Path pattern: `data/custom-logo.<ext>` where `<ext>` is `png`, `jpg`, `webp`, or `gif` depending on upload MIME type.
+- Managed by `server/personalization.ts`: write replaces any previous `custom-logo.*` file; delete removes all matching files.
+- Served by `GET /api/settings/logo` with the correct `Content-Type`.
+- Not included in `GET /api/backup` (SQLite serialize only). Docker volume or filesystem backup of `data/` is required to preserve logos across restores.
 
 Why the schema is still small:
 
 - There is no user model because the auth model is one shared password from the environment.
 - There is no session table because auth state lives in a signed cookie.
-- There is no saved-search or larger settings table because those features do not exist yet.
+- There is no saved-search table; instance settings are limited to logging and cosmetic personalization.
 - `app_logs` stores significant library/API activity for the operator; it is not an auth audit trail.
 - Shelves use join tables and domain-rule tables instead of mutating `items`, because an item can belong to multiple shelves and deleting a shelf must not delete items.
 
@@ -168,13 +186,27 @@ Why the schema is still small:
 ### Auth Bootstrap
 
 1. `App.tsx` starts in `isCheckingSession`.
-2. The browser calls `GET /api/auth/check`.
-3. If the cookie is valid, the app becomes authenticated and fetches `/api/items`.
-4. If the check returns `401`, the app shows `LoginForm`.
-5. `POST /api/auth/login` sets a signed cookie named `openshelf_session`.
-6. `POST /api/auth/logout` clears that cookie.
+2. The browser calls `GET /api/settings/personalization` (public) and applies `document.title`, favicon, and logo URLs via `src/lib/branding.ts`.
+3. The browser calls `GET /api/auth/check`.
+4. If the cookie is valid, the app becomes authenticated, renders the header (`Navbar`), and fetches `/api/items`.
+5. If the check returns `401`, the app shows `LoginForm` without the main header row. The login form still uses the configured or default logo.
+6. `POST /api/auth/login` sets a signed cookie named `openshelf_session`.
+7. `POST /api/auth/logout` clears that cookie.
 
 Important exception: the signing secret is generated in memory at startup with `crypto.randomUUID()`, so every server restart invalidates all existing sessions.
+
+### Personalization
+
+1. The operator opens **Actions → Personalization** from the authenticated library UI.
+2. `PATCH /api/settings/personalization` stores `display_name` in `app_settings`. An empty or null value resets to the default `OpenShelf` label in API responses.
+3. `POST /api/settings/logo` accepts multipart field `logo`, validates MIME type (PNG, JPEG, WebP, GIF) and a 2MB size cap, writes `data/custom-logo.<ext>`, and updates `logo_updated_at`.
+4. `DELETE /api/settings/logo` removes the file and clears `logo_updated_at`.
+5. The header shows the custom name with a **by OpenShelf** subtitle only when the resolved display name is not the default `OpenShelf` (avoids redundant “OpenShelf by OpenShelf” copy).
+6. Browser tab title format: `{display_name} - Self-Hosted Read-Later Manager by OpenShelf`.
+7. Personalization changes are not written to `app_logs`.
+8. After save, `App.tsx` receives updated settings through `onBrandingChange` so the header, favicon, and login logo update without a full reload.
+
+Branding routes are intentionally public for read (`GET /api/settings/personalization`, `GET /api/settings/logo`) so the login screen and favicon work before session auth. Mutations require the session cookie.
 
 ### CSV Import
 
@@ -225,7 +257,7 @@ Important exception: canceling a validation run stops future batches, but alread
 
 - Browser CSV export uses the in-memory item list plus `Papa.unparse`. This is how the shipped UI exports data now.
 - `GET /api/export?scope=all|archive|unread` also exists server-side, but the current UI does not call it.
-- `GET /api/backup` returns a raw SQLite snapshot generated from the live database handle.
+- `GET /api/backup` returns a raw SQLite snapshot generated from the live database handle. It includes `display_name` in `app_settings` but not the optional `data/custom-logo.<ext>` file.
 
 ## State Transitions
 
@@ -272,6 +304,8 @@ Important exception: canceling a validation run stops future batches, but alread
 - `server/routes/shelves.ts`: shelf CRUD, explicit item membership, and domain-rule routes
 - `server/routes/import.ts`: import/export/backup
 - `server/routes/logs.ts`: list, wipe, and prune app activity logs
+- `server/routes/settings.ts`: personalization read (public) and logo/name mutations (session auth)
+- `server/personalization.ts`: custom logo file I/O and display-name/title helpers
 - `server/app-log.ts`: safe wrapper for writing `app_logs` rows from route handlers
 - `server/db.ts`: schema plus direct query helpers
 - `server/csv.ts`: source-specific CSV parsing, validation, dedupe, and export helpers
@@ -286,6 +320,7 @@ Important exception: canceling a validation run stops future batches, but alread
 - Shelves: `/api/shelves`, `/api/shelves/:id`, `/api/shelves/:id/items`, `/api/shelves/:id/domains`
 - Import/egress: `/api/import`, `/api/export`, `/api/backup`
 - Activity logs: `/api/logs`, `/api/logs/prune`
+- Personalization: `/api/settings/personalization`, `/api/settings/logo` (reads public; writes session auth)
 
 ### Error Model
 
@@ -335,6 +370,7 @@ Security boundary:
 - `PATCH /api/items/:id` with no recognized fields returns the current row unchanged.
 - Server-side CSV export strips `id` and validation fields and only writes the five Pocket CSV columns.
 - Production static serving assumes `dist/` exists. The normal `bun run start` path builds it first.
+- Restoring only a SQLite backup after personalization will restore `display_name` but not a custom logo file unless `data/custom-logo.<ext>` is copied separately.
 
 ## Security Considerations
 
