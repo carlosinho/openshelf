@@ -124,10 +124,9 @@ Versions prior to v0.3.0 considered legacy.
     - Make it possible for users to make their own instance of OpenShelf fit their brand.
     - Option to upload their own logo / delete / replace. The logo would appear in the top left corner and also as the fav icon.
     - Change the name in the header next to the logo. Change the meta title too. 
-- [ ] Separate settings screen.
+- [x] Separate settings screen.
     - Don't have everything under Actions.
-    - Move settings (non-acitons) to a separate panel.
-    - Just have a gear icon for the buttons instead of a big button.
+    - Move settings (non-actions) to a separate panel. Moved the following items: Manage shelves → rename to Shelves, API access → rename to API, App logs → rename to Logs, Personalization → rename to Personalize
 
 ### v1.0.0 - Advanced imports and bulk actions
 - [ ] Import mapping wizard for unknown CSVs.

@@ -195,7 +195,7 @@ Important exception: the signing secret is generated in memory at startup with `
 
 ### Personalization
 
-1. The operator opens **Actions → Personalization** from the authenticated library UI.
+1. The operator opens **Settings → Personalize** from the footer gear icon (to the right of **Log out**).
 2. `PATCH /api/settings/personalization` stores `display_name` in `app_settings`. An empty or null value resets to the default `OpenShelf` label in API responses.
 3. `POST /api/settings/logo` accepts multipart field `logo`, validates MIME type (PNG, JPEG, WebP, GIF) and a 2MB size cap, writes `data/custom-logo.<ext>`, and updates `logo_updated_at`.
 4. `DELETE /api/settings/logo` removes the file and clears `logo_updated_at`.
@@ -330,7 +330,7 @@ Important exception: canceling a validation run stops future batches, but alread
 
 - Password source: `OPENSHELF_PASSWORD`
 - Verification: `Bun.password.verify()`
-- Remote API key: one optional key per instance, stored in SQLite `api_keys`, managed from Actions → API access
+- Remote API key: one optional key per instance, stored in SQLite `api_keys`, managed from Settings → API
 - Remote verification: `Authorization: Bearer <api_key>` with timing-safe comparison
 - Cookie name: `openshelf_session`
 - Cookie properties: `httpOnly`, `sameSite: 'Lax'`, `path: '/'`, `maxAge: 30 days`

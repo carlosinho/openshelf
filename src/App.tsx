@@ -156,14 +156,18 @@ function App() {
         </main>
       </div>
 
-      {isAuthenticated && hasLibraryContent && (
+      {isAuthenticated && (
         <div className="container mx-auto mt-16 px-4">
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Database className="size-4" />
-              <span>{data.length} saved links in this OpenShelf library</span>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
+            {hasLibraryContent ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Database className="size-4" />
+                <span>{data.length} saved links in this OpenShelf library</span>
+              </div>
+            ) : (
+              <div className="min-w-0 flex-1" />
+            )}
+            <div className="flex flex-wrap items-center justify-end gap-2">
               <Button variant="outline" onClick={handleDownloadBackup} className="gap-2">
                 <Download className="size-4" />
                 Download DB
@@ -171,6 +175,7 @@ function App() {
               <Button variant="outline" onClick={handleLogout}>
                 Log out
               </Button>
+              <div id="openshelf-footer-settings" className="relative" />
             </div>
           </div>
         </div>
@@ -178,7 +183,7 @@ function App() {
 
       <AppFooter
         version={`ver ${packageJson.version}`}
-        className={isAuthenticated && hasLibraryContent ? 'mt-4' : ''}
+        className={isAuthenticated ? 'mt-4' : ''}
       />
 
     </div>

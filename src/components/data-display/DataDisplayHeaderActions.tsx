@@ -1,17 +1,5 @@
 import type { Ref } from 'react'
-import {
-  BookMarked,
-  ChevronDown,
-  Download,
-  KeyRound,
-  Palette,
-  Plus,
-  ScrollText,
-  Sparkles,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react'
+import { ChevronDown, Download, Plus, Sparkles, Trash2, Upload, X } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Tooltip } from '../ui/tooltip'
 
@@ -29,10 +17,6 @@ interface DataDisplayHeaderActionsProps {
   onStartValidation: () => void
   onCancelValidation: () => void
   onClearArchived: () => void
-  onOpenShelfManager: () => void
-  onOpenApiKeyDialog: () => void
-  onOpenAppLogsDialog: () => void
-  onOpenPersonalizationDialog: () => void
   onToggleAddLink: () => void
 }
 
@@ -50,14 +34,19 @@ export function DataDisplayHeaderActions({
   onStartValidation,
   onCancelValidation,
   onClearArchived,
-  onOpenShelfManager,
-  onOpenApiKeyDialog,
-  onOpenAppLogsDialog,
-  onOpenPersonalizationDialog,
   onToggleAddLink,
 }: DataDisplayHeaderActionsProps) {
   return (
     <>
+      <Button
+        variant="default"
+        size="sm"
+        onClick={onToggleAddLink}
+        className="w-full justify-center gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200 lg:w-auto"
+      >
+        <Plus className="opacity-60" size={16} aria-hidden="true" />
+        Add link
+      </Button>
       <div className="relative hidden lg:block" ref={actionsMenuRef}>
         <Button
           variant="outline"
@@ -102,42 +91,6 @@ export function DataDisplayHeaderActions({
               <Upload className="size-4 opacity-60" aria-hidden="true" />
               Import links
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenShelfManager}
-              className="w-full justify-start gap-2"
-            >
-              <BookMarked className="size-4 opacity-60" aria-hidden="true" />
-              Manage shelves
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenApiKeyDialog}
-              className="w-full justify-start gap-2"
-            >
-              <KeyRound className="size-4 opacity-60" aria-hidden="true" />
-              API access
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenAppLogsDialog}
-              className="w-full justify-start gap-2"
-            >
-              <ScrollText className="size-4 opacity-60" aria-hidden="true" />
-              App logs
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onOpenPersonalizationDialog}
-              className="w-full justify-start gap-2"
-            >
-              <Palette className="size-4 opacity-60" aria-hidden="true" />
-              Personalization
-            </Button>
             {!isValidationRunning ? (
               <Tooltip content="Checks only links from unread items in the current view">
                 <Button
@@ -176,15 +129,6 @@ export function DataDisplayHeaderActions({
           </div>
         )}
       </div>
-      <Button
-        variant="default"
-        size="sm"
-        onClick={onToggleAddLink}
-        className="w-full justify-center gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200 lg:w-auto"
-      >
-        <Plus className="opacity-60" size={16} aria-hidden="true" />
-        Add link
-      </Button>
     </>
   )
 }

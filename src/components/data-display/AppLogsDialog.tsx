@@ -113,7 +113,7 @@ export function AppLogsDialog({ onClose }: AppLogsDialogProps) {
 
   return (
     <ShelfModal
-      title="App logs"
+      title="Logs"
       description="Significant library actions such as adding links, archiving, imports, shelf assignments, and API activity."
       onClose={onClose}
     >

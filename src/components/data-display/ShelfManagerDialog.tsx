@@ -105,7 +105,7 @@ export function ShelfManagerDialog({
 
   return (
     <ShelfModal
-      title="Manage shelves"
+      title="Shelves"
       description="Create, rename, delete shelves, and remove saved domain rules."
       onClose={onClose}
     >

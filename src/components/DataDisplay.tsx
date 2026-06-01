@@ -28,6 +28,7 @@ import { type DateFilterValue } from './ui/date-range-filter'
 import { DataDisplayBulkActions } from './data-display/DataDisplayBulkActions'
 import { DataDisplayFilters, type BuiltInDateView } from './data-display/DataDisplayFilters'
 import { DataDisplayHeaderActions } from './data-display/DataDisplayHeaderActions'
+import { DataDisplayHeaderSettings } from './data-display/DataDisplayHeaderSettings'
 import { DataDisplayHeaderPanels } from './data-display/DataDisplayHeaderPanels'
 import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeaderStatusFilters'
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
@@ -135,12 +136,14 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
   )
   const [isFiltersOpen, setIsFiltersOpen] = useState(false)
   const [isActionsOpen, setIsActionsOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [shelfAssignmentState, setShelfAssignmentState] = useState<ShelfAssignmentState | null>(null)
   const [isShelfManagerOpen, setIsShelfManagerOpen] = useState(false)
   const [isApiKeyDialogOpen, setIsApiKeyDialogOpen] = useState(false)
   const [isAppLogsDialogOpen, setIsAppLogsDialogOpen] = useState(false)
   const [isPersonalizationDialogOpen, setIsPersonalizationDialogOpen] = useState(false)
   const actionsMenuRef = useRef<HTMLDivElement | null>(null)
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null)
   const addLinkInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleRequestError = (error: unknown, fallbackMessage: string) => {
@@ -559,19 +562,32 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
   }
 
   React.useEffect(() => {
-    if (!isActionsOpen) {
+    if (!isActionsOpen && !isSettingsOpen) {
       return
     }
 
     const handlePointerDown = (event: MouseEvent) => {
-      if (actionsMenuRef.current && !actionsMenuRef.current.contains(event.target as Node)) {
+      const target = event.target as Node
+      if (
+        isActionsOpen &&
+        actionsMenuRef.current &&
+        !actionsMenuRef.current.contains(target)
+      ) {
         setIsActionsOpen(false)
+      }
+      if (
+        isSettingsOpen &&
+        settingsMenuRef.current &&
+        !settingsMenuRef.current.contains(target)
+      ) {
+        setIsSettingsOpen(false)
       }
     }
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsActionsOpen(false)
+        setIsSettingsOpen(false)
       }
     }
 
@@ -582,7 +598,7 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [isActionsOpen])
+  }, [isActionsOpen, isSettingsOpen])
 
   React.useEffect(() => {
     if (!isAddingLink) {
@@ -786,6 +802,10 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
     typeof document !== 'undefined'
       ? document.getElementById('openshelf-header-panels')
       : null
+  const footerSettingsTarget =
+    typeof document !== 'undefined'
+      ? document.getElementById('openshelf-footer-settings')
+      : null
 
   return (
     <div className={className}>
@@ -802,54 +822,69 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
 
       {headerActionsTarget &&
         createPortal(
-          <DataDisplayHeaderActions
-            actionsMenuRef={actionsMenuRef}
-            isActionsOpen={isActionsOpen}
-            hasScopedView={hasScopedView}
-            unreadFilteredCount={unreadFilteredData.length}
-            archivedCount={archivedCount}
-            isValidationRunning={validationState.isRunning}
-            onToggleActionsOpen={() => setIsActionsOpen((prev) => !prev)}
-            onExportAll={() => {
-              handleExportAll()
+          <>
+            <DataDisplayHeaderActions
+              actionsMenuRef={actionsMenuRef}
+              isActionsOpen={isActionsOpen}
+              hasScopedView={hasScopedView}
+              unreadFilteredCount={unreadFilteredData.length}
+              archivedCount={archivedCount}
+              isValidationRunning={validationState.isRunning}
+              onToggleActionsOpen={() => setIsActionsOpen((prev) => !prev)}
+              onExportAll={() => {
+                handleExportAll()
+                setIsActionsOpen(false)
+              }}
+              onExportFiltered={() => {
+                handleExportFiltered()
+                setIsActionsOpen(false)
+              }}
+              onOpenImportDialog={handleOpenImportDialog}
+              onStartValidation={() => {
+                void handleStartValidation()
+                setIsActionsOpen(false)
+              }}
+              onCancelValidation={() => {
+                handleCancelValidation()
+                setIsActionsOpen(false)
+              }}
+              onClearArchived={() => {
+                void handleClearArchived()
+                setIsActionsOpen(false)
+              }}
+              onToggleAddLink={handleToggleAddLink}
+            />
+          </>,
+          headerActionsTarget
+        )}
+
+      {footerSettingsTarget &&
+        createPortal(
+          <DataDisplayHeaderSettings
+            settingsMenuRef={settingsMenuRef}
+            isSettingsOpen={isSettingsOpen}
+            onToggleSettingsOpen={() => {
               setIsActionsOpen(false)
+              setIsSettingsOpen((prev) => !prev)
             }}
-            onExportFiltered={() => {
-              handleExportFiltered()
-              setIsActionsOpen(false)
-            }}
-            onOpenImportDialog={handleOpenImportDialog}
             onOpenShelfManager={() => {
               setIsShelfManagerOpen(true)
-              setIsActionsOpen(false)
+              setIsSettingsOpen(false)
             }}
             onOpenApiKeyDialog={() => {
               setIsApiKeyDialogOpen(true)
-              setIsActionsOpen(false)
+              setIsSettingsOpen(false)
             }}
             onOpenAppLogsDialog={() => {
               setIsAppLogsDialogOpen(true)
-              setIsActionsOpen(false)
+              setIsSettingsOpen(false)
             }}
             onOpenPersonalizationDialog={() => {
               setIsPersonalizationDialogOpen(true)
-              setIsActionsOpen(false)
+              setIsSettingsOpen(false)
             }}
-            onStartValidation={() => {
-              void handleStartValidation()
-              setIsActionsOpen(false)
-            }}
-            onCancelValidation={() => {
-              handleCancelValidation()
-              setIsActionsOpen(false)
-            }}
-            onClearArchived={() => {
-              void handleClearArchived()
-              setIsActionsOpen(false)
-            }}
-            onToggleAddLink={handleToggleAddLink}
           />,
-          headerActionsTarget
+          footerSettingsTarget
         )}
 
       {headerPanelsTarget &&

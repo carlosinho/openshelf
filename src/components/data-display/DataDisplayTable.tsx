@@ -89,7 +89,7 @@ export function DataDisplayTable({
         onToggleArchived={onToggleArchived}
         onOpenShelfPicker={onOpenShelfPicker}
       />
-      <Table className="hidden lg:table">
+      <Table>
         <TableHeader>
           <TableRow className="hover:bg-transparent">
             <TableHead className="w-[80px]">

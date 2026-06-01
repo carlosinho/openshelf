@@ -98,7 +98,7 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 
 ### Personalization
 
-1. After logging in, open **Actions → Personalization**.
+1. After logging in, open the **Settings** gear at the bottom of the page (to the right of **Log out**) → **Personalize**.
 2. Set a **display name** (shown in the authenticated header and browser tab title).
 3. Upload a **logo** (PNG, JPEG, WebP, or GIF, max 2MB). It appears in the header, as the favicon, and on the login screen. Remove it to restore the default OpenShelf artwork.
 
@@ -318,11 +318,11 @@ ARCHITECTURE.md
 | `POST` | `/api/settings/logo` | Upload or replace logo. Multipart field: `logo`. Session auth. |
 | `DELETE` | `/api/settings/logo` | Remove custom logo and restore defaults. Session auth. |
 
-The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`. App logs are viewable from **Actions → App logs**. Personalization is under **Actions → Personalization**.
+The shipped UI currently uses browser-side CSV export and `GET /api/backup`. It does not call `GET /api/export`. App logs are under **Settings → Logs**. Personalization is under **Settings → Personalize**. Library actions (export, import, URL check) are under **Actions** (desktop only).
 
 ## Using the API with curl
 
-Open the app, go to **Actions → API access**, and generate an API key. You can show, copy, regenerate, or revoke it there.
+Open the app, go to **Settings → API**, and generate an API key. You can show, copy, regenerate, or revoke it there.
 
 To add a link from the command line, call `POST /api/v1/items` with your instance URL and API key:
 
@@ -337,7 +337,7 @@ curl -sS -X POST 'http://YOUR_OPENSHELF.com:PORT/api/v1/items' \
 
 You can add unread links from the iOS Share menu without a native app. Use Apple’s **Shortcuts** app with your instance API key and `POST /api/v1/items`.
 
-1. On your iPhone, open OpenShelf in **Safari**, log in, and go to **Actions → API access**.
+1. On your iPhone, open OpenShelf in **Safari**, log in, and go to **Settings → API**.
 2. Generate an API key if you do not have one yet, then follow the **Save from iPhone or iPad** steps in that dialog.
   - Create a shortcut that accepts URLs from the Share Sheet, sends a JSON body `{"url":"..."}` to `https://YOUR_INSTANCE/api/v1/items`, and sends `Authorization: Bearer YOUR_API_KEY`.
   - Share a page from Safari, pick your shortcut, and confirm the link shows up as unread in OpenShelf.

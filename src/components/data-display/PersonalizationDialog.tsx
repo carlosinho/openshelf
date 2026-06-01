@@ -113,7 +113,7 @@ export function PersonalizationDialog({ onClose, onUpdated }: PersonalizationDia
 
   return (
     <ShelfModal
-      title="Personalization"
+      title="Personalize"
       description="Customize how this instance looks in the header, browser tab, and login screen."
       onClose={onClose}
     >

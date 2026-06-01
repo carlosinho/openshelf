@@ -163,7 +163,7 @@ export function ApiKeyDialog({ onClose }: ApiKeyDialogProps) {
 
   return (
     <ShelfModal
-      title="API access"
+      title="API"
       description="Add unread links remotely from Raycast, Alfred, curl, the iOS Share menu, or other tools using an API key."
       onClose={onClose}
     >
