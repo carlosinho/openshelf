@@ -127,6 +127,9 @@ Versions prior to v0.3.0 considered legacy.
 - [x] Separate settings screen.
     - Don't have everything under Actions.
     - Move settings (non-actions) to a separate panel. Moved the following items: Manage shelves → rename to Shelves, API access → rename to API, App logs → rename to Logs, Personalization → rename to Personalize
+- [x] Better "Add link" workflow.
+    - Manual add now opens a centered amber modal (same pattern as API, Personalize, Shelves).
+    - On mobile, a floating + Add button in the bottom-right replaces the full-width header Add link button.
 
 ### v1.0.0 - Advanced imports and bulk actions
 - [ ] Import mapping wizard for unknown CSVs.

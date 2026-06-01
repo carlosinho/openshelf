@@ -94,7 +94,8 @@ If you want one private read-later queue that you run yourself, OpenShelf should
 2. The app loads all items from `/api/items`.
 3. Use the header unread/archive checkboxes to choose the current list view. The default view is unread-only; selecting both shows the full library and selecting neither shows an empty view. Search, filter, sort, paginate, archive or unarchive items from the list or selected-items bar, export, delete, and organize with shelves from the browser UI, including platform-specific filtering for Twitter/X, Reddit, and GitHub links, custom date filtering, and quick `Date filter presets`.
 4. Optionally create shelves such as `work`, `funny`, or `important`, add individual links to them, or attach an entire root domain so current and future links from that domain land on the same shelf automatically.
-5. Optionally import more Pocket, Instapaper, Matter, or Raindrop CSV exports, add one URL manually, or run URL checks on the current filtered unread set.
+5. Add a link from the header **Add link** button (desktop) or the floating **+ Add** button (mobile). Both open the same centered modal where you paste a URL and submit; the server fetches a title when it can.
+6. Optionally import more Pocket, Instapaper, Matter, or Raindrop CSV exports, or run URL checks on the current filtered unread set.
 
 ### Personalization
 

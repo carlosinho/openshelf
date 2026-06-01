@@ -29,8 +29,9 @@ import { DataDisplayBulkActions } from './data-display/DataDisplayBulkActions'
 import { DataDisplayFilters, type BuiltInDateView } from './data-display/DataDisplayFilters'
 import { DataDisplayHeaderActions } from './data-display/DataDisplayHeaderActions'
 import { DataDisplayHeaderSettings } from './data-display/DataDisplayHeaderSettings'
-import { DataDisplayHeaderPanels } from './data-display/DataDisplayHeaderPanels'
 import { DataDisplayHeaderStatusFilters } from './data-display/DataDisplayHeaderStatusFilters'
+import { AddLinkDialog } from './data-display/AddLinkDialog'
+import { AddLinkFab } from './data-display/AddLinkFab'
 import { DataDisplayImportSummary } from './data-display/DataDisplayImportSummary'
 import { ApiKeyDialog } from './data-display/ApiKeyDialog'
 import { AppLogsDialog } from './data-display/AppLogsDialog'
@@ -115,7 +116,7 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
     errors: number
   } | null>(null)
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false)
-  const [isAddingLink, setIsAddingLink] = useState(false)
+  const [isAddLinkDialogOpen, setIsAddLinkDialogOpen] = useState(false)
   const [newUrl, setNewUrl] = useState('')
   const [addError, setAddError] = useState<string | null>(null)
   const [isAddingLoading, setIsAddingLoading] = useState(false)
@@ -227,7 +228,7 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
       await createItem({ url: newUrl.trim() })
       await onRefresh?.()
       setNewUrl('')
-      setIsAddingLink(false)
+      setIsAddLinkDialogOpen(false)
     } catch (error) {
       setAddError(error instanceof ApiError ? error.message : 'Failed to add link.')
     } finally {
@@ -601,15 +602,6 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
   }, [isActionsOpen, isSettingsOpen])
 
   React.useEffect(() => {
-    if (!isAddingLink) {
-      return
-    }
-
-    addLinkInputRef.current?.focus()
-    addLinkInputRef.current?.select()
-  }, [isAddingLink])
-
-  React.useEffect(() => {
     if (!hasProblematicItems && onlyProblematic) {
       setOnlyProblematic(false)
     }
@@ -772,13 +764,13 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
     setIsActionsOpen(false)
   }
 
-  const handleToggleAddLink = () => {
-    setIsAddingLink((prev) => !prev)
+  const handleOpenAddLink = () => {
     setAddError(null)
+    setIsAddLinkDialogOpen(true)
   }
 
-  const handleCancelAddLink = () => {
-    setIsAddingLink(false)
+  const handleCloseAddLink = () => {
+    setIsAddLinkDialogOpen(false)
     setNewUrl('')
     setAddError(null)
   }
@@ -797,10 +789,6 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
   const headerStatusFiltersTarget =
     typeof document !== 'undefined'
       ? document.getElementById('openshelf-header-status-filters')
-      : null
-  const headerPanelsTarget =
-    typeof document !== 'undefined'
-      ? document.getElementById('openshelf-header-panels')
       : null
   const footerSettingsTarget =
     typeof document !== 'undefined'
@@ -852,7 +840,7 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
                 void handleClearArchived()
                 setIsActionsOpen(false)
               }}
-              onToggleAddLink={handleToggleAddLink}
+              onOpenAddLink={handleOpenAddLink}
             />
           </>,
           headerActionsTarget
@@ -887,23 +875,7 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
           footerSettingsTarget
         )}
 
-      {headerPanelsTarget &&
-        createPortal(
-          <DataDisplayHeaderPanels
-            id={id}
-            isAddingLink={isAddingLink}
-            newUrl={newUrl}
-            addError={addError}
-            isAddingLoading={isAddingLoading}
-            addLinkInputRef={addLinkInputRef}
-            onNewUrlChange={handleNewUrlChange}
-            onSubmitAddLink={() => {
-              void handleAddLink()
-            }}
-            onCancelAddLink={handleCancelAddLink}
-          />,
-          headerPanelsTarget
-        )}
+      {!isAddLinkDialogOpen ? <AddLinkFab onClick={handleOpenAddLink} /> : null}
 
       {importSummary && (
         <DataDisplayImportSummary
@@ -911,6 +883,21 @@ export function DataDisplay({ data, shelves, className, onRefresh, onBrandingCha
           onDismiss={() => setImportSummary(null)}
         />
       )}
+
+      {isAddLinkDialogOpen ? (
+        <AddLinkDialog
+          urlInputId={`${id}-new-url`}
+          newUrl={newUrl}
+          addError={addError}
+          isAddingLoading={isAddingLoading}
+          urlInputRef={addLinkInputRef}
+          onNewUrlChange={handleNewUrlChange}
+          onSubmit={() => {
+            void handleAddLink()
+          }}
+          onClose={handleCloseAddLink}
+        />
+      ) : null}
 
       {isApiKeyDialogOpen ? <ApiKeyDialog onClose={() => setIsApiKeyDialogOpen(false)} /> : null}
 

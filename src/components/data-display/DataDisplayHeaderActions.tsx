@@ -17,7 +17,7 @@ interface DataDisplayHeaderActionsProps {
   onStartValidation: () => void
   onCancelValidation: () => void
   onClearArchived: () => void
-  onToggleAddLink: () => void
+  onOpenAddLink: () => void
 }
 
 export function DataDisplayHeaderActions({
@@ -34,15 +34,15 @@ export function DataDisplayHeaderActions({
   onStartValidation,
   onCancelValidation,
   onClearArchived,
-  onToggleAddLink,
+  onOpenAddLink,
 }: DataDisplayHeaderActionsProps) {
   return (
     <>
       <Button
         variant="default"
         size="sm"
-        onClick={onToggleAddLink}
-        className="w-full justify-center gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200 lg:w-auto"
+        onClick={onOpenAddLink}
+        className="hidden gap-2 border border-amber-200 bg-amber-100 text-amber-900 hover:bg-amber-200 lg:inline-flex"
       >
         <Plus className="opacity-60" size={16} aria-hidden="true" />
         Add link

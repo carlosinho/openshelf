@@ -38,10 +38,6 @@ export function Navbar({ displayName, logoSrc }: NavbarProps) {
             className="relative col-span-2 flex flex-wrap items-center justify-end gap-2 lg:col-span-1 lg:ml-auto lg:gap-3"
           />
         </div>
-        <div
-          id="openshelf-header-panels"
-          className="mt-3 w-full"
-        />
       </div>
     </header>
   )
